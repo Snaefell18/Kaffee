@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoffeeDrop - Der Kaffee-Kurier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .hide { display: none !important; }
+        /* Entfernt Scrollbars für einen App-Look */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased selection:bg-black selection:text-white">
+
+    <div id="auth-screen" class="min-h-screen flex flex-col items-center justify-center p-6 bg-white">
+        <div class="text-center mb-10">
+            <div class="text-6xl mb-4">☕</div>
+            <h1 class="text-4xl font-black tracking-tight">CoffeeDrop</h1>
+            <p class="text-gray-500 mt-2">Kaffee auf Knopfdruck.</p>
+        </div>
+        
+        <div class="w-full max-w-sm space-y-4">
+            <input type="email" id="email" placeholder="name@email.com" class="w-full p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-black transition">
+            <input type="password" id="password" placeholder="Passwort" class="w-full p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-black transition">
+            <button id="login-btn" class="w-full bg-black text-white p-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition active:scale-95">Einloggen / Registrieren</button>
+        </div>
+    </div>
+
+    <div id="app-screen" class="hide min-h-screen flex flex-col pb-28">
+        
+        <header class="bg-white p-5 shadow-sm sticky top-0 z-10 flex justify-between items-center">
+            <h1 class="text-2xl font-black tracking-tight">CoffeeDrop</h1>
+            <button id="logout-btn" class="text-sm font-semibold text-gray-500 hover:text-black">Logout</button>
+        </header>
+
+        <div class="p-5 bg-white mt-2">
+            <h2 class="font-bold text-lg mb-3">Wohin liefern wir?</h2>
+            <div class="relative">
+                <span class="absolute left-4 top-3.5 text-xl">📍</span>
+                <input type="text" id="address" placeholder="Straße und Hausnummer..." class="w-full pl-12 p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-black transition font-medium">
+            </div>
+        </div>
+
+        <div class="p-5">
+            <h2 class="font-bold text-lg mb-4">Wähle deinen Kaffee</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Espresso', 2.50)">
+                    <div class="text-5xl mb-3">☕</div>
+                    <h3 class="font-bold text-gray-800">Espresso</h3>
+                    <p class="text-gray-500 font-medium">2,50 €</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Cappuccino', 3.80)">
+                    <div class="text-5xl mb-3">🥛</div>
+                    <h3 class="font-bold text-gray-800">Cappuccino</h3>
+                    <p class="text-gray-500 font-medium">3,80 €</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Iced Latte', 4.50)">
+                    <div class="text-5xl mb-3">🧊</div>
+                    <h3 class="font-bold text-gray-800">Iced Latte</h3>
+                    <p class="text-gray-500 font-medium">4,50 €</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Flat White', 4.20)">
+                    <div class="text-5xl mb-3">🤎</div>
+                    <h3 class="font-bold text-gray-800">Flat White</h3>
+                    <p class="text-gray-500 font-medium">4,20 €</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+            <div class="flex justify-between items-center mb-3 px-1">
+                <span class="font-medium text-gray-500 text-sm">Auswahl:</span>
+                <span id="selected-coffee" class="text-black font-bold text-lg">Keiner</span>
+            </div>
+            <button id="order-btn" class="w-full bg-black text-white p-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition disabled:bg-gray-200 disabled:text-gray-400 active:scale-95" disabled>Bestellung aufgeben</button>
+        </div>
+    </div>
+
+    <script type="module">
+      // Importiere Firebase direkt über das CDN
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+      import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
+
+      // Deine eingefügte Firebase Config
+      const firebaseConfig = {
+        apiKey: "AIzaSyBddDHPUptynMcVWvDKGVQOnTNwitujCEg",
+        authDomain: "kaffee-544f4.firebaseapp.com",
+        projectId: "kaffee-544f4",
+        storageBucket: "kaffee-544f4.firebasestorage.app",
+        messagingSenderId: "1082256261108",
+        appId: "1:1082256261108:web:374edc340875e48ecb83a1",
+        measurementId: "G-TRZ50P7JDH"
+      };
+
+      // Initialize Firebase & Analytics
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      const auth = getAuth(app);
+
+      // DOM Elemente
+      const authScreen = document.getElementById('auth-screen');
+      const appScreen = document.getElementById('app-screen');
+      const loginBtn = document.getElementById('login-btn');
+      const logoutBtn = document.getElementById('logout-btn');
+      const orderBtn = document.getElementById('order-btn');
+      const addressInput = document.getElementById('address');
+      
+      let currentSelection = null;
+
+      // Überwacht, ob der Nutzer eingeloggt ist
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          authScreen.classList.add('hide');
+          appScreen.classList.remove('hide');
+        } else {
+          authScreen.classList.remove('hide');
+          appScreen.classList.add('hide');
+        }
+      });
+
+      // Simpler Login / Registrierung
+      loginBtn.addEventListener('click', async () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        if(!email || !password) return alert("Bitte E-Mail und Passwort eingeben!");
+
+        try {
+            // Versuche Login
+            await signInWithEmailAndPassword(auth, email, password);
+        } catch (error) {
+            // Wenn der User nicht existiert, erstelle ihn automatisch (für die Test-Version super praktisch)
+            if(error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
+                try {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    alert("Neuer Account wurde erfolgreich erstellt!");
+                } catch(err) {
+                    alert("Fehler bei der Registrierung: " + err.message);
+                }
+            } else {
+                alert("Fehler: " + error.message);
+            }
+        }
+      });
+
+      // Logout
+      logoutBtn.addEventListener('click', () => signOut(auth));
+
+      // Kaffee auswählen
+      window.selectCoffee = (name, price) => {
+        currentSelection = { name, price };
+        document.getElementById('selected-coffee').innerText = `${name} (${price.toFixed(2).replace('.', ',')} €)`;
+        orderBtn.disabled = false;
+        orderBtn.classList.add('bg-black');
+        orderBtn.classList.remove('bg-gray-200', 'text-gray-400');
+      };
+
+      // Bestellen (Simulation)
+      orderBtn.addEventListener('click', () => {
+        const address = addressInput.value;
+        if(!address) {
+            alert("📍 Bitte gib eine Lieferadresse ein!");
+            addressInput.focus();
+            return;
+        }
+        
+        alert(`🎉 Bestellung erfolgreich!\n\nDein ${currentSelection.name} ist auf dem Weg zu:\n${address}\n\n(Dies ist ein Test)`);
+        
+        // Reset
+        currentSelection = null;
+        document.getElementById('selected-coffee').innerText = 'Keiner';
+        orderBtn.disabled = true;
+        addressInput.value = '';
+      });
+    </script>
+</body>
+</html>
