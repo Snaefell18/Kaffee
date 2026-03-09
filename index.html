@@ -43,6 +43,9 @@
 </head>
 <body class="bg-gray-50 text-gray-900 antialiased selection:bg-black selection:text-white">
 
+    <!-- TOAST NOTIFICATION (Ersatz für alert) -->
+    <div id="notification-toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl z-[100] transition-all duration-300 opacity-0 -translate-y-10 pointer-events-none text-center max-w-[90vw] whitespace-pre-wrap font-medium"></div>
+
     <!-- SPLASH SCREEN -->
     <div id="splash-screen" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
         <div class="flex gap-4 text-5xl sm:text-6xl mb-8">
@@ -259,7 +262,6 @@
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
       import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-      // NEU: Firestore importiert
       import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
       import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
 
@@ -279,7 +281,6 @@
       const db = getFirestore(app);
       const googleProvider = new GoogleAuthProvider();
       
-      // Fallback für App-ID aus der Vercel/Umgebung, sonst Standardwert für dein Projekt
       const appId = typeof __app_id !== 'undefined' ? __app_id : 'coffee-drop-app';
 
       const authScreen = document.getElementById('auth-screen');
@@ -300,10 +301,25 @@
       const logoContainer = document.getElementById('logo-container');
       const authText = document.getElementById('auth-text');
       const authForm = document.getElementById('auth-form');
+      const toast = document.getElementById('notification-toast');
 
       let splashDone = false;
       let userIsLoggedIn = false;
-      let unsubscribeOrders = null; // Um den Datenbank-Listener wieder zu beenden
+      let unsubscribeOrders = null; 
+
+      // --- CUSTOM NOTIFICATION SYSTEM (Ersatz für alert) ---
+      let toastTimeout;
+      window.showNotification = (message, duration = 4000) => {
+          toast.innerText = message;
+          toast.classList.remove('opacity-0', '-translate-y-10');
+          toast.classList.add('opacity-100', 'translate-y-0');
+          
+          clearTimeout(toastTimeout);
+          toastTimeout = setTimeout(() => {
+              toast.classList.remove('opacity-100', 'translate-y-0');
+              toast.classList.add('opacity-0', '-translate-y-10');
+          }, duration);
+      };
 
       // --- KARTEN LOGIK (Leaflet) ---
       let map;
@@ -377,13 +393,13 @@
                       getAddressFromCoords(lat, lng);
                   }, 
                   (error) => {
-                      alert("GPS Zugriff verweigert oder nicht verfügbar. Bitte bewege den Pin manuell.");
+                      showNotification("GPS Zugriff verweigert oder nicht verfügbar. Bitte bewege den Pin manuell.");
                       document.getElementById('map-status').innerText = "Bewege den Pin 📍";
                   },
                   { enableHighAccuracy: true }
               );
           } else {
-              alert("Dein Browser unterstützt kein GPS.");
+              showNotification("Dein Browser unterstützt kein GPS.");
           }
       });
 
@@ -415,7 +431,6 @@
           const cartContainer = document.getElementById('cart-items-container');
           const cartCountEl = document.getElementById('cart-count');
           const cartTotalEl = document.getElementById('cart-total');
-          const orderBtn = document.getElementById('order-btn');
 
           let totalItems = 0;
           let totalPrice = 0;
@@ -451,6 +466,7 @@
               cartTotalEl.innerText = totalPrice.toFixed(2).replace('.', ',') + ' €';
               
               orderBtn.disabled = false;
+              orderBtn.innerHTML = "Zur Kasse";
               orderBtn.classList.remove('bg-gray-200', 'text-gray-400');
               orderBtn.classList.add('bg-black', 'text-white', 'hover:bg-gray-800');
           } else {
@@ -459,6 +475,7 @@
               cartTotalEl.innerText = '0,00 €';
               
               orderBtn.disabled = true;
+              orderBtn.innerHTML = "Zur Kasse";
               orderBtn.classList.add('bg-gray-200', 'text-gray-400');
               orderBtn.classList.remove('bg-black', 'text-white', 'hover:bg-gray-800');
           }
@@ -466,18 +483,15 @@
 
       // --- BESTELLHISTORIE LADEN (Firestore) ---
       function subscribeToOrders(userId) {
-          if (unsubscribeOrders) unsubscribeOrders(); // Falls schon einer lief, beenden
+          if (unsubscribeOrders) unsubscribeOrders(); 
 
-          // Firebase Regel 1: Private Daten unter /artifacts/appId/users/userId/...
           const ordersRef = collection(db, 'artifacts', appId, 'users', userId, 'orders');
           
           unsubscribeOrders = onSnapshot(ordersRef, (snapshot) => {
               const orders = [];
               snapshot.forEach(doc => orders.push({id: doc.id, ...doc.data()}));
               
-              // Im Frontend nach dem Datum absteigend sortieren (Neueste zuerst)
               orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-              
               renderOrders(orders);
           }, (error) => {
               console.error("Fehler beim Laden der Bestellungen:", error);
@@ -494,7 +508,6 @@
           
           let html = '';
           orders.forEach(order => {
-              // Datum formatieren
               const dateObj = new Date(order.createdAt);
               const dateStr = dateObj.toLocaleDateString('de-DE');
               const timeStr = dateObj.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'});
@@ -527,7 +540,6 @@
           container.innerHTML = html;
       }
 
-
       // --- NAVIGATION BESTELLUNGEN ---
       ordersBtn.addEventListener('click', () => {
           appScreen.classList.add('hide');
@@ -539,7 +551,6 @@
           ordersScreen.classList.add('hide');
           appScreen.classList.remove('hide');
           window.scrollTo({ top: 0, behavior: 'smooth' });
-          // Karte muss sich nach dem Verstecken neu berechnen
           setTimeout(() => { if(map) map.invalidateSize(); }, 300);
       });
 
@@ -579,8 +590,6 @@
           appScreen.classList.remove('hide');
           
           if(splashDone) initMap(); 
-          
-          // NEU: Lade die Bestellungen für diesen Nutzer
           subscribeToOrders(user.uid);
           
         } else {
@@ -589,7 +598,6 @@
           appScreen.classList.add('hide');
           ordersScreen.classList.add('hide');
           
-          // NEU: Beende den Datenbank-Listener beim Logout
           if(unsubscribeOrders) unsubscribeOrders();
           
           if (splashDone) {
@@ -610,7 +618,7 @@
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         
-        if(!email || !password) return alert("Bitte E-Mail und Passwort eingeben!");
+        if(!email || !password) return showNotification("Bitte E-Mail und Passwort eingeben!");
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
@@ -618,12 +626,12 @@
             if(error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
                 try {
                     await createUserWithEmailAndPassword(auth, email, password);
-                    alert("Neuer Account wurde erfolgreich erstellt!");
+                    showNotification("Neuer Account wurde erfolgreich erstellt!");
                 } catch(err) {
-                    alert("Fehler bei der Registrierung: " + err.message);
+                    showNotification("Fehler bei der Registrierung: " + err.message);
                 }
             } else {
-                alert("Fehler: " + error.message);
+                showNotification("Fehler: " + error.message);
             }
         }
       });
@@ -634,7 +642,7 @@
             await signInWithPopup(auth, googleProvider);
         } catch (error) {
             console.error("Google Login Error:", error);
-            alert("Fehler beim Google-Login. Hast du ihn in der Firebase Console aktiviert?");
+            showNotification("Fehler beim Google-Login. Hast du ihn in der Firebase Console aktiviert?");
         }
       });
 
@@ -645,20 +653,17 @@
       orderBtn.addEventListener('click', async () => {
         const user = auth.currentUser;
         if(!user) {
-            alert("Du musst eingeloggt sein, um zu bestellen.");
-            return;
+            return showNotification("Du musst eingeloggt sein, um zu bestellen.");
         }
 
         const address = addressInput.value;
         const notes = notesInput.value;
         
         if(!address) {
-            alert("📍 Bitte gib eine Lieferadresse ein oder wähle sie auf der Karte!");
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
+            return showNotification("📍 Bitte gib eine Lieferadresse ein oder wähle sie auf der Karte!");
         }
 
-        // Berechne Gesamtsumme für die Datenbank
         let totalPrice = 0;
         let orderSummary = "";
         for (const [name, item] of Object.entries(window.cart)) {
@@ -666,13 +671,12 @@
             orderSummary += `- ${item.quantity}x ${name} (${(item.price * item.quantity).toFixed(2).replace('.', ',')} €)\n`;
         }
 
-        // Baue das Daten-Paket für Firebase zusammen
         const orderData = {
             items: window.cart,
             totalPrice: totalPrice,
             address: address,
             notes: notes,
-            createdAt: new Date().toISOString() // Speichert exaktes Datum + Uhrzeit
+            createdAt: new Date().toISOString()
         };
 
         orderBtn.disabled = true;
@@ -684,22 +688,21 @@
             
             const cartKeys = Object.keys(window.cart);
 
-            // --- STRIPE CHECKOUT (Nachdem die Bestellung gespeichert wurde) ---
+            // --- STRIPE CHECKOUT ---
             if (cartKeys.length === 1 && cartKeys[0] === 'Normaler Kaffee' && window.cart['Normaler Kaffee'].quantity === 1) {
-                // Hier leiten wir den Nutzer zu Stripe weiter
-                window.location.href = "https://buy.stripe.com/test_3cIeVe7Ecb8wc77f9p8EM00";
+                // Öffnet den Link in einem neuen Fenster, damit er hier im Test-Canvas nicht geblockt wird
+                window.open("https://buy.stripe.com/test_3cIeVe7Ecb8wc77f9p8EM00", "_blank");
+                window.cart = {};
+                updateCartUI();
                 return; 
             }
             
             // --- SIMULIERTE BESTELLUNG FÜR ALLES ANDERE ---
-            let successMessage = `🎉 Bestellung erfolgreich gespeichert!\n\nDeine Bestellung:\n${orderSummary}\nGesamtsumme: ${totalPrice.toFixed(2).replace('.', ',')} €\n\nLieferadresse:\n${address}`;
-            if(notes) {
-                successMessage += `\n\nNotiz: ${notes}`;
-            }
+            let successMessage = `🎉 Bestellung erfolgreich!\n\n${orderSummary}\nGesamtsumme: ${totalPrice.toFixed(2).replace('.', ',')} €\n\nZiel:\n${address}`;
+            if(notes) successMessage += `\n\nNotiz: ${notes}`;
             
-            alert(successMessage);
+            showNotification(successMessage, 6000);
             
-            // Reset nach Bestellung
             window.cart = {};
             updateCartUI();
             addressInput.value = '';
@@ -708,7 +711,7 @@
 
         } catch (error) {
             console.error("Fehler beim Speichern in Firebase:", error);
-            alert("Es gab einen Fehler bei der Bestellung. Bitte versuche es noch einmal.");
+            showNotification("Es gab einen Fehler bei der Bestellung. Hast du deine Firestore-Datenbank bereits aktiviert?");
             orderBtn.disabled = false;
             orderBtn.innerHTML = "Zur Kasse";
         }
