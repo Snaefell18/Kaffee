@@ -4,22 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaffee Lieferung</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         .hide { display: none !important; }
         ::-webkit-scrollbar { display: none; }
+        
+        /* Animations für Splashscreen und Login */
+        @keyframes flyIn {
+            0% { transform: translateY(-40px) scale(0.9); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes popUp {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+
+        .pre-anim { opacity: 0; }
+        .animate-fly-in { animation: flyIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        .animate-pop-up { animation: popUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        .splash-fade-out { animation: fadeOut 0.5s ease-out forwards; }
+        .floating-icon { animation: float 2.5s ease-in-out infinite; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 antialiased selection:bg-black selection:text-white">
 
+    <!-- SPLASH SCREEN -->
+    <div id="splash-screen" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
+        <div class="flex gap-4 text-5xl sm:text-6xl mb-8">
+            <div class="floating-icon" style="animation-delay: 0s;">☕</div>
+            <div class="floating-icon" style="animation-delay: 0.2s;">🥐</div>
+            <div class="floating-icon" style="animation-delay: 0.4s;">🥯</div>
+            <div class="floating-icon" style="animation-delay: 0.6s;">🍵</div>
+            <div class="floating-icon" style="animation-delay: 0.8s;">🍩</div>
+        </div>
+        <div class="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+            <div class="w-full h-full bg-black animate-pulse"></div>
+        </div>
+    </div>
+
+    <!-- LOGIN SCREEN -->
     <div id="auth-screen" class="min-h-screen flex flex-col items-center justify-center p-6 bg-white">
-        <div class="text-center mb-10 flex flex-col items-center">
+        <div id="logo-container" class="text-center mb-10 flex flex-col items-center pre-anim">
             <img src="logo.jpg" alt="Logo" class="w-32 h-32 object-cover rounded-3xl shadow-md mb-4" onerror="this.outerHTML='<div class=\'text-7xl mb-4\'>☕</div>'">
-            <p class="text-gray-500 font-medium mt-2">Willkommen zurück!</p>
+            <p id="auth-text" class="text-gray-500 font-medium mt-2 pre-anim">Willkommen zurück!</p>
         </div>
         
-        <div class="w-full max-w-sm space-y-4">
+        <div id="auth-form" class="w-full max-w-sm space-y-4 pre-anim">
             <input type="email" id="email" placeholder="name@email.com" class="w-full p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-black transition">
             <input type="password" id="password" placeholder="Passwort" class="w-full p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-black transition">
             <button id="login-btn" class="w-full bg-black text-white p-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition active:scale-95">Einloggen / Registrieren</button>
@@ -43,8 +83,11 @@
         </div>
     </div>
 
-    <div id="app-screen" class="hide min-h-screen flex flex-col pb-32">
+    <!-- APP SCREEN -->
+    <!-- Größeres Padding unten (pb-48) für den Warenkorb und Button -->
+    <div id="app-screen" class="hide min-h-screen flex flex-col pb-48">
         
+        <!-- Header -->
         <header class="bg-white p-4 shadow-sm sticky top-0 z-10 flex justify-between items-center">
             <div class="flex items-center">
                 <img src="logo.jpg" alt="Logo" class="w-10 h-10 rounded-xl object-cover" onerror="this.outerHTML='<span class=\'text-3xl\'>☕</span>'">
@@ -52,91 +95,133 @@
             <button id="logout-btn" class="text-sm font-semibold text-gray-500 hover:text-black bg-gray-100 px-4 py-2 rounded-xl transition">Logout</button>
         </header>
 
+        <!-- Adresseingabe & Notizen -->
         <div class="p-5 bg-white mt-2 shadow-sm">
-            <h2 class="font-bold text-lg mb-3">Wohin liefern wir?</h2>
-            <div class="relative">
-                <span class="absolute left-4 top-3.5 text-xl">📍</span>
-                <input type="text" id="address" placeholder="Straße und Hausnummer..." class="w-full pl-12 p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-black transition font-medium">
+            <h2 class="font-bold text-lg mb-3">Lieferdetails</h2>
+            <div class="space-y-3">
+                <div class="relative">
+                    <span class="absolute left-4 top-3.5 text-xl">📍</span>
+                    <input type="text" id="address" placeholder="Straße und Hausnummer..." class="w-full pl-12 p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-black transition font-medium">
+                </div>
+                <div class="relative">
+                    <span class="absolute left-4 top-3.5 text-xl">📝</span>
+                    <input type="text" id="notes" placeholder="Optionale Notiz (z.B. Hafermilch)" class="w-full pl-12 p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-black transition font-medium text-sm">
+                </div>
             </div>
         </div>
 
+        <!-- Kaffee Auswahl -->
         <div class="p-5">
             <h2 class="font-bold text-lg mb-4">Wähle dein Getränk</h2>
             <div class="grid grid-cols-2 gap-4">
                 
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Espresso', 2.50)">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95" onclick="addToCart('Espresso', 2.50)">
                     <div class="text-4xl mb-3">☕</div>
                     <h3 class="font-bold text-gray-800">Espresso</h3>
                     <p class="text-gray-500 font-medium">2,50 €</p>
+                    <div class="mt-3 text-xs font-bold text-black bg-gray-100 px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Cappuccino', 3.80)">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95" onclick="addToCart('Cappuccino', 3.80)">
                     <div class="text-4xl mb-3">🥛</div>
                     <h3 class="font-bold text-gray-800">Cappuccino</h3>
                     <p class="text-gray-500 font-medium">3,80 €</p>
+                    <div class="mt-3 text-xs font-bold text-black bg-gray-100 px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Americano', 3.00)">
+                
+                <!-- Stripe Payment verlinkter Kaffee -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95 border-2 border-black" onclick="addToCart('Normaler Kaffee', 8.00)">
                     <div class="text-4xl mb-3">☕</div>
-                    <h3 class="font-bold text-gray-800">Americano</h3>
-                    <p class="text-gray-500 font-medium">3,00 €</p>
+                    <h3 class="font-bold text-gray-800">Normaler Kaffee</h3>
+                    <p class="text-gray-500 font-medium">8,00 €</p>
+                    <div class="mt-3 text-xs font-bold text-white bg-black px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Flat White', 4.20)">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95" onclick="addToCart('Flat White', 4.20)">
                     <div class="text-4xl mb-3">🤎</div>
                     <h3 class="font-bold text-gray-800">Flat White</h3>
                     <p class="text-gray-500 font-medium">4,20 €</p>
+                    <div class="mt-3 text-xs font-bold text-black bg-gray-100 px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Latte Macchiato', 4.00)">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95" onclick="addToCart('Latte Macchiato', 4.00)">
                     <div class="text-4xl mb-3">🥛</div>
                     <h3 class="font-bold text-gray-800">Latte Macchiato</h3>
                     <p class="text-gray-500 font-medium">4,00 €</p>
+                    <div class="mt-3 text-xs font-bold text-black bg-gray-100 px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Iced Latte', 4.50)">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95" onclick="addToCart('Iced Latte', 4.50)">
                     <div class="text-4xl mb-3">🧊</div>
                     <h3 class="font-bold text-gray-800">Iced Latte</h3>
                     <p class="text-gray-500 font-medium">4,50 €</p>
+                    <div class="mt-3 text-xs font-bold text-black bg-gray-100 px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Cold Brew', 4.20)">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95" onclick="addToCart('Cold Brew', 4.20)">
                     <div class="text-4xl mb-3">🧊</div>
                     <h3 class="font-bold text-gray-800">Cold Brew</h3>
                     <p class="text-gray-500 font-medium">4,20 €</p>
+                    <div class="mt-3 text-xs font-bold text-black bg-gray-100 px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Mocha', 4.50)">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95" onclick="addToCart('Mocha', 4.50)">
                     <div class="text-4xl mb-3">🍫</div>
                     <h3 class="font-bold text-gray-800">Mocha</h3>
                     <p class="text-gray-500 font-medium">4,50 €</p>
+                    <div class="mt-3 text-xs font-bold text-black bg-gray-100 px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Matcha Latte', 4.80)">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95" onclick="addToCart('Matcha Latte', 4.80)">
                     <div class="text-4xl mb-3">🍵</div>
                     <h3 class="font-bold text-gray-800">Matcha Latte</h3>
                     <p class="text-gray-500 font-medium">4,80 €</p>
+                    <div class="mt-3 text-xs font-bold text-black bg-gray-100 px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Chai Latte', 4.20)">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95" onclick="addToCart('Chai Latte', 4.20)">
                     <div class="text-4xl mb-3">🫖</div>
                     <h3 class="font-bold text-gray-800">Chai Latte</h3>
                     <p class="text-gray-500 font-medium">4,20 €</p>
+                    <div class="mt-3 text-xs font-bold text-black bg-gray-100 px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Cortado', 3.20)">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95" onclick="addToCart('Cortado', 3.20)">
                     <div class="text-4xl mb-3">🥃</div>
                     <h3 class="font-bold text-gray-800">Cortado</h3>
                     <p class="text-gray-500 font-medium">3,20 €</p>
+                    <div class="mt-3 text-xs font-bold text-black bg-gray-100 px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Heiße Schoko', 3.80)">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition active:scale-95" onclick="addToCart('Heiße Schoko', 3.80)">
                     <div class="text-4xl mb-3">🍫</div>
                     <h3 class="font-bold text-gray-800">Heiße Schoko</h3>
                     <p class="text-gray-500 font-medium">3,80 €</p>
+                    <div class="mt-3 text-xs font-bold text-black bg-gray-100 px-3 py-1 rounded-full">+ Hinzufügen</div>
                 </div>
 
             </div>
         </div>
 
-        <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-            <div class="flex justify-between items-center mb-3 px-1">
-                <span class="font-medium text-gray-500 text-sm">Auswahl:</span>
-                <span id="selected-coffee" class="text-black font-bold text-lg">Keiner</span>
+        <!-- WARENKORB BEREICH (Wird erst eingeblendet, wenn etwas im Korb ist) -->
+        <div id="cart-section" class="p-5 bg-white mt-2 shadow-sm hidden">
+            <h2 class="font-bold text-xl mb-4 flex items-center gap-2">🛒 Dein Warenkorb</h2>
+            <div id="cart-items-container" class="space-y-3">
+                <!-- Hier werden die bestellten Artikel via JavaScript eingefügt -->
             </div>
-            <button id="order-btn" class="w-full bg-black text-white p-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition disabled:bg-gray-200 disabled:text-gray-400 active:scale-95" disabled>Bestellung aufgeben</button>
+        </div>
+
+        <!-- Bestell-Button (Sticky) -->
+        <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-20">
+            <div class="flex justify-between items-center mb-3 px-1">
+                <span class="font-medium text-gray-500 text-sm">Gesamtsumme (<span id="cart-count">0</span> Artikel):</span>
+                <span id="cart-total" class="text-black font-black text-xl">0,00 €</span>
+            </div>
+            <button id="order-btn" class="w-full bg-gray-200 text-gray-400 p-4 rounded-xl font-bold text-lg transition active:scale-95" disabled>Zur Kasse</button>
         </div>
     </div>
 
+    <!-- FIREBASE LOGIK -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
       import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
@@ -162,19 +247,142 @@
       const loginBtn = document.getElementById('login-btn');
       const googleLoginBtn = document.getElementById('google-login-btn');
       const logoutBtn = document.getElementById('logout-btn');
+      
       const orderBtn = document.getElementById('order-btn');
       const addressInput = document.getElementById('address');
+      const notesInput = document.getElementById('notes');
       
-      let currentSelection = null;
+      const splashScreen = document.getElementById('splash-screen');
+      const logoContainer = document.getElementById('logo-container');
+      const authText = document.getElementById('auth-text');
+      const authForm = document.getElementById('auth-form');
+
+      let splashDone = false;
+      let userIsLoggedIn = false;
+
+      // --- WARENKORB LOGIK ---
+      window.cart = {}; // Objekt, das alle Artikel speichert
+
+      window.addToCart = (name, price) => {
+          if (window.cart[name]) {
+              window.cart[name].quantity += 1;
+          } else {
+              window.cart[name] = { price: price, quantity: 1 };
+          }
+          updateCartUI();
+      };
+
+      window.removeFromCart = (name) => {
+          if (window.cart[name]) {
+              window.cart[name].quantity -= 1;
+              if (window.cart[name].quantity <= 0) {
+                  delete window.cart[name]; // Entfernt den Artikel komplett
+              }
+          }
+          updateCartUI();
+      };
+
+      function updateCartUI() {
+          const cartSection = document.getElementById('cart-section');
+          const cartContainer = document.getElementById('cart-items-container');
+          const cartCountEl = document.getElementById('cart-count');
+          const cartTotalEl = document.getElementById('cart-total');
+          const orderBtn = document.getElementById('order-btn');
+
+          let totalItems = 0;
+          let totalPrice = 0;
+          let cartHTML = '';
+
+          for (const [name, item] of Object.entries(window.cart)) {
+              totalItems += item.quantity;
+              const itemTotal = item.price * item.quantity;
+              totalPrice += itemTotal;
+
+              cartHTML += `
+                  <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <div class="flex flex-col">
+                          <span class="font-bold text-gray-800">${item.quantity}x ${name}</span>
+                          <span class="text-sm text-gray-500">${item.price.toFixed(2).replace('.', ',')} € / Stk</span>
+                      </div>
+                      <div class="flex items-center gap-3">
+                          <span class="font-bold">${itemTotal.toFixed(2).replace('.', ',')} €</span>
+                          <div class="flex items-center bg-white rounded-lg border border-gray-200 shadow-sm">
+                              <button onclick="removeFromCart('${name}')" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-black hover:bg-gray-100 rounded-l-lg transition font-bold">-</button>
+                              <div class="w-px h-5 bg-gray-200"></div>
+                              <button onclick="addToCart('${name}', ${item.price})" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-black hover:bg-gray-100 rounded-r-lg transition font-bold">+</button>
+                          </div>
+                      </div>
+                  </div>
+              `;
+          }
+
+          if (totalItems > 0) {
+              cartSection.classList.remove('hidden');
+              cartContainer.innerHTML = cartHTML;
+              cartCountEl.innerText = totalItems;
+              cartTotalEl.innerText = totalPrice.toFixed(2).replace('.', ',') + ' €';
+              
+              orderBtn.disabled = false;
+              orderBtn.classList.remove('bg-gray-200', 'text-gray-400');
+              orderBtn.classList.add('bg-black', 'text-white', 'hover:bg-gray-800');
+          } else {
+              cartSection.classList.add('hidden');
+              cartCountEl.innerText = '0';
+              cartTotalEl.innerText = '0,00 €';
+              
+              orderBtn.disabled = true;
+              orderBtn.classList.add('bg-gray-200', 'text-gray-400');
+              orderBtn.classList.remove('bg-black', 'text-white', 'hover:bg-gray-800');
+          }
+      }
+
+      // --- SPLASH SCREEN LOGIK & ANIMATIONEN ---
+      setTimeout(() => {
+          splashScreen.classList.add('splash-fade-out');
+          setTimeout(() => splashScreen.classList.add('hide'), 500);
+          splashDone = true;
+          
+          if (!userIsLoggedIn) {
+              playAuthAnimations();
+          }
+      }, 2500);
+
+      function playAuthAnimations() {
+          logoContainer.classList.remove('pre-anim');
+          logoContainer.classList.add('animate-fly-in');
+          
+          setTimeout(() => {
+              authText.classList.remove('pre-anim');
+              authText.classList.add('animate-pop-up');
+          }, 300);
+
+          setTimeout(() => {
+              authForm.classList.remove('pre-anim');
+              authForm.classList.add('animate-pop-up');
+          }, 600);
+      }
 
       // Auth State Observer
       onAuthStateChanged(auth, (user) => {
         if (user) {
+          userIsLoggedIn = true;
           authScreen.classList.add('hide');
           appScreen.classList.remove('hide');
         } else {
+          userIsLoggedIn = false;
           authScreen.classList.remove('hide');
           appScreen.classList.add('hide');
+          
+          if (splashDone) {
+              logoContainer.classList.add('pre-anim');
+              logoContainer.classList.remove('animate-fly-in');
+              authText.classList.add('pre-anim');
+              authText.classList.remove('animate-pop-up');
+              authForm.classList.add('pre-anim');
+              authForm.classList.remove('animate-pop-up');
+              
+              setTimeout(playAuthAnimations, 50);
+          }
         }
       });
 
@@ -214,212 +422,51 @@
       // Logout
       logoutBtn.addEventListener('click', () => signOut(auth));
 
-      // Kaffee auswählen
-      window.selectCoffee = (name, price) => {
-        currentSelection = { name, price };
-        document.getElementById('selected-coffee').innerText = `${name} (${price.toFixed(2).replace('.', ',')} €)`;
-        orderBtn.disabled = false;
-        orderBtn.classList.add('bg-black');
-        orderBtn.classList.remove('bg-gray-200', 'text-gray-400');
-      };
-
-      // Bestellen
+      // --- ZUR KASSE LOGIK ---
       orderBtn.addEventListener('click', () => {
         const address = addressInput.value;
+        const notes = notesInput.value;
+        
         if(!address) {
             alert("📍 Bitte gib eine Lieferadresse ein!");
             addressInput.focus();
+            // Scrollt automatisch zur Adresseingabe
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
+
+        const cartKeys = Object.keys(window.cart);
+
+        // --- STRIPE CHECKOUT ---
+        // Prüfe, ob EXAKT 1x "Normaler Kaffee" im Warenkorb liegt und sonst nichts.
+        if (cartKeys.length === 1 && cartKeys[0] === 'Normaler Kaffee' && window.cart['Normaler Kaffee'].quantity === 1) {
+            window.location.href = "https://buy.stripe.com/test_3cIeVe7Ecb8wc77f9p8EM00";
+            return; 
+        }
         
-        alert(`🎉 Bestellung erfolgreich!\n\nDein Getränk (${currentSelection.name}) ist auf dem Weg zu:\n${address}\n\n(Dies ist ein Test)`);
+        // --- SIMULIERTE BESTELLUNG FÜR ALLES ANDERE ---
+        let orderSummary = "";
+        let totalPrice = 0;
         
-        // Reset
-        currentSelection = null;
-        document.getElementById('selected-coffee').innerText = 'Keiner';
-        orderBtn.disabled = true;
+        for (const [name, item] of Object.entries(window.cart)) {
+            orderSummary += `- ${item.quantity}x ${name} (${(item.price * item.quantity).toFixed(2).replace('.', ',')} €)\n`;
+            totalPrice += item.price * item.quantity;
+        }
+
+        let successMessage = `🎉 Bestellung erfolgreich!\n\nDeine Bestellung:\n${orderSummary}\nGesamtsumme: ${totalPrice.toFixed(2).replace('.', ',')} €\n\nLieferadresse:\n${address}`;
+        if(notes) {
+            successMessage += `\n\nNotiz: ${notes}`;
+        }
+        successMessage += `\n\n(Hinweis: Da noch kein Backend verbunden ist, wird dies hier als Test simuliert.)`;
+
+        alert(successMessage);
+        
+        // Reset nach Bestellung
+        window.cart = {};
+        updateCartUI();
         addressInput.value = '';
-      });
-    </script>
-</body>
-</html>            
-            <div class="flex items-center my-4">
-                <div class="flex-grow border-t border-gray-200"></div>
-                <span class="px-3 text-gray-400 text-sm">oder</span>
-                <div class="flex-grow border-t border-gray-200"></div>
-            </div>
-
-            <button id="google-login-btn" class="w-full bg-white border-2 border-gray-100 text-gray-800 p-4 rounded-xl font-bold text-lg hover:bg-gray-50 hover:border-gray-200 transition active:scale-95 flex items-center justify-center gap-3">
-                <svg class="w-6 h-6" viewBox="0 0 48 48">
-                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                    <path fill="none" d="M0 0h48v48H0z"/>
-                </svg>
-                Mit Google einloggen
-            </button>
-        </div>
-    </div>
-
-    <div id="app-screen" class="hide min-h-screen flex flex-col pb-28">
-        
-        <header class="bg-white p-5 shadow-sm sticky top-0 z-10 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <img src="logo.jpg" alt="Logo" class="w-8 h-8 rounded-lg object-cover" onerror="this.outerHTML='<span class=\'text-2xl\'>☕</span>'">
-                <h1 class="text-xl font-black tracking-tight">CoffeeDrop</h1>
-            </div>
-            <button id="logout-btn" class="text-sm font-semibold text-gray-500 hover:text-black bg-gray-100 px-3 py-1.5 rounded-lg">Logout</button>
-        </header>
-
-        <div class="p-5 bg-white mt-2">
-            <h2 class="font-bold text-lg mb-3">Wohin liefern wir?</h2>
-            <div class="relative">
-                <span class="absolute left-4 top-3.5 text-xl">📍</span>
-                <input type="text" id="address" placeholder="Straße und Hausnummer..." class="w-full pl-12 p-4 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-black transition font-medium">
-            </div>
-        </div>
-
-        <div class="p-5">
-            <h2 class="font-bold text-lg mb-4">Wähle deinen Kaffee</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Espresso', 2.50)">
-                    <div class="text-5xl mb-3">☕</div>
-                    <h3 class="font-bold text-gray-800">Espresso</h3>
-                    <p class="text-gray-500 font-medium">2,50 €</p>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Cappuccino', 3.80)">
-                    <div class="text-5xl mb-3">🥛</div>
-                    <h3 class="font-bold text-gray-800">Cappuccino</h3>
-                    <p class="text-gray-500 font-medium">3,80 €</p>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Iced Latte', 4.50)">
-                    <div class="text-5xl mb-3">🧊</div>
-                    <h3 class="font-bold text-gray-800">Iced Latte</h3>
-                    <p class="text-gray-500 font-medium">4,50 €</p>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-black hover:shadow-md transition" onclick="selectCoffee('Flat White', 4.20)">
-                    <div class="text-5xl mb-3">🤎</div>
-                    <h3 class="font-bold text-gray-800">Flat White</h3>
-                    <p class="text-gray-500 font-medium">4,20 €</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-            <div class="flex justify-between items-center mb-3 px-1">
-                <span class="font-medium text-gray-500 text-sm">Auswahl:</span>
-                <span id="selected-coffee" class="text-black font-bold text-lg">Keiner</span>
-            </div>
-            <button id="order-btn" class="w-full bg-black text-white p-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition disabled:bg-gray-200 disabled:text-gray-400 active:scale-95" disabled>Bestellung aufgeben</button>
-        </div>
-    </div>
-
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-      // GoogleAuthProvider und signInWithPopup hinzugefügt!
-      import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyBddDHPUptynMcVWvDKGVQOnTNwitujCEg",
-        authDomain: "kaffee-544f4.firebaseapp.com",
-        projectId: "kaffee-544f4",
-        storageBucket: "kaffee-544f4.firebasestorage.app",
-        messagingSenderId: "1082256261108",
-        appId: "1:1082256261108:web:374edc340875e48ecb83a1",
-        measurementId: "G-TRZ50P7JDH"
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
-      const auth = getAuth(app);
-      // Google Provider initialisieren
-      const googleProvider = new GoogleAuthProvider();
-
-      // DOM Elemente
-      const authScreen = document.getElementById('auth-screen');
-      const appScreen = document.getElementById('app-screen');
-      const loginBtn = document.getElementById('login-btn');
-      const googleLoginBtn = document.getElementById('google-login-btn');
-      const logoutBtn = document.getElementById('logout-btn');
-      const orderBtn = document.getElementById('order-btn');
-      const addressInput = document.getElementById('address');
-      
-      let currentSelection = null;
-
-      // Auth State Observer
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          authScreen.classList.add('hide');
-          appScreen.classList.remove('hide');
-        } else {
-          authScreen.classList.remove('hide');
-          appScreen.classList.add('hide');
-        }
-      });
-
-      // E-Mail/Passwort Login
-      loginBtn.addEventListener('click', async () => {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        
-        if(!email || !password) return alert("Bitte E-Mail und Passwort eingeben!");
-
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-        } catch (error) {
-            if(error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
-                try {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                    alert("Neuer Account wurde erfolgreich erstellt!");
-                } catch(err) {
-                    alert("Fehler bei der Registrierung: " + err.message);
-                }
-            } else {
-                alert("Fehler: " + error.message);
-            }
-        }
-      });
-
-      // GOOGLE LOGIN
-      googleLoginBtn.addEventListener('click', async () => {
-        try {
-            await signInWithPopup(auth, googleProvider);
-        } catch (error) {
-            console.error("Google Login Error:", error);
-            alert("Fehler beim Google-Login. Hast du ihn in der Firebase Console aktiviert?");
-        }
-      });
-
-      // Logout
-      logoutBtn.addEventListener('click', () => signOut(auth));
-
-      // Kaffee auswählen
-      window.selectCoffee = (name, price) => {
-        currentSelection = { name, price };
-        document.getElementById('selected-coffee').innerText = `${name} (${price.toFixed(2).replace('.', ',')} €)`;
-        orderBtn.disabled = false;
-        orderBtn.classList.add('bg-black');
-        orderBtn.classList.remove('bg-gray-200', 'text-gray-400');
-      };
-
-      // Bestellen
-      orderBtn.addEventListener('click', () => {
-        const address = addressInput.value;
-        if(!address) {
-            alert("📍 Bitte gib eine Lieferadresse ein!");
-            addressInput.focus();
-            return;
-        }
-        
-        alert(`🎉 Bestellung erfolgreich!\n\nDein ${currentSelection.name} ist auf dem Weg zu:\n${address}\n\n(Dies ist ein Test)`);
-        
-        // Reset
-        currentSelection = null;
-        document.getElementById('selected-coffee').innerText = 'Keiner';
-        orderBtn.disabled = true;
-        addressInput.value = '';
+        notesInput.value = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     </script>
 </body>
