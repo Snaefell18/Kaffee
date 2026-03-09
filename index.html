@@ -495,6 +495,11 @@
               renderOrders(orders);
           }, (error) => {
               console.error("Fehler beim Laden der Bestellungen:", error);
+              // NEU: Zeigt den Fehler direkt auf dem Bildschirm an, statt ewig zu laden
+              const container = document.getElementById('orders-list-container');
+              if(container) {
+                  container.innerHTML = `<p class="text-red-500 text-center mt-10 font-bold">⚠️ Zugriff verweigert oder Fehler beim Laden.</p><p class="text-gray-500 text-center text-sm mt-2">Sind die Firebase-Regeln richtig veröffentlicht?</p>`;
+              }
           });
       }
 
@@ -508,31 +513,37 @@
           
           let html = '';
           orders.forEach(order => {
-              const dateObj = new Date(order.createdAt);
+              // SICHERHEITS-FALLBACKS: Verhindert Abstürze bei manuell angelegten, unvollständigen Dokumenten
+              const items = order.items || {};
+              const totalPrice = order.totalPrice || 0;
+              const address = order.address || 'Keine Adresse hinterlegt';
+              const notes = order.notes || '';
+              const dateObj = order.createdAt ? new Date(order.createdAt) : new Date();
+
               const dateStr = dateObj.toLocaleDateString('de-DE');
               const timeStr = dateObj.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'});
               
               let itemsHtml = '';
-              for (const [name, item] of Object.entries(order.items)) {
-                  itemsHtml += `<div class="text-sm font-medium text-gray-700 mb-1">• ${item.quantity}x ${name}</div>`;
+              for (const [name, item] of Object.entries(items)) {
+                  itemsHtml += `<div class="text-sm font-medium text-gray-700 mb-1">• ${item.quantity || 1}x ${name}</div>`;
               }
               
               html += `
-                  <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                  <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden mb-4">
                       <div class="flex justify-between items-start mb-3 border-b border-gray-100 pb-3">
                           <div>
                               <div class="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">${dateStr}</div>
                               <div class="font-bold text-gray-900">${timeStr} Uhr</div>
                           </div>
-                          <span class="font-black text-xl text-black">${order.totalPrice.toFixed(2).replace('.', ',')} €</span>
+                          <span class="font-black text-xl text-black">${totalPrice.toFixed(2).replace('.', ',')} €</span>
                       </div>
                       <div class="mb-4">
-                          ${itemsHtml}
+                          ${itemsHtml || '<span class="text-gray-500 italic">Keine Details zu Artikeln gefunden</span>'}
                       </div>
                       <div class="text-sm text-gray-600 bg-gray-50 p-3 rounded-xl">
                           <span class="font-semibold block mb-1">Lieferadresse:</span>
-                          <span class="block text-gray-800">${order.address}</span>
-                          ${order.notes ? `<div class="mt-2 text-gray-500"><span class="font-semibold text-gray-700">Notiz:</span> ${order.notes}</div>` : ''}
+                          <span class="block text-gray-800">${address}</span>
+                          ${notes ? `<div class="mt-2 text-gray-500"><span class="font-semibold text-gray-700">Notiz:</span> ${notes}</div>` : ''}
                       </div>
                   </div>
               `;
