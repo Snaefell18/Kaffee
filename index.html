@@ -701,10 +701,8 @@
 
             // --- STRIPE CHECKOUT ---
             if (cartKeys.length === 1 && cartKeys[0] === 'Normaler Kaffee' && window.cart['Normaler Kaffee'].quantity === 1) {
-                // Öffnet den Link in einem neuen Fenster, damit er hier im Test-Canvas nicht geblockt wird
-                window.open("https://buy.stripe.com/test_3cIeVe7Ecb8wc77f9p8EM00", "_blank");
-                window.cart = {};
-                updateCartUI();
+                // Leite direkt im selben Fenster zu Stripe weiter (Popup-Blocker freundlich)
+                window.location.href = "https://buy.stripe.com/test_3cIeVe7Ecb8wc77f9p8EM00";
                 return; 
             }
             
