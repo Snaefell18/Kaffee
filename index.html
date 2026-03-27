@@ -1002,11 +1002,30 @@ Antworte immer auf Deutsch, freundlich, kurz und hilfreich. Wenn du etwas nicht 
             createdAt: new Date().toISOString()
         };
 
+        // Daten für die Crew-App (Lieferanten & Restaurants)
+        const publicOrderData = {
+            items: window.cart,
+            totalPrice: totalPrice,
+            address: address,
+            notes: notes,
+            createdAt: new Date().toISOString(),
+            status: 'aktiv',
+            userId: user.uid,
+            userEmail: user.email || '',
+            cafe: 'FreshGO Lübeck',
+            driverId: null,
+            driverName: null
+        };
+
         orderBtn.disabled = true;
         orderBtn.innerHTML = "Wird verarbeitet... ⏳";
 
         try {
-            await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'orders'), orderData);
+            // In beide Collections gleichzeitig schreiben
+            await Promise.all([
+                addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'orders'), orderData),
+                addDoc(collection(db, 'artifacts', appId, 'public_orders'), publicOrderData)
+            ]);
             
             const cartKeys = Object.keys(window.cart);
 
