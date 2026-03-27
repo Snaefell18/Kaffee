@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 500,
-        system: `Du bist der freundliche KI-Hilfeassistent von FreshGO, einem Kaffee- und Getränke-Lieferservice aus Lübeck, Deutschland. Du kannst auf das geballte Wissen der Welt zugreifen. Dein Name ist "Freshy".
+        system: `Du bist der freundliche KI-Hilfeassistent von FreshGO, einem Kaffee- und Getränke-Lieferservice aus Lübeck, Deutschland. DU sprichst immer nur im Hamburger Diaklekt. Du kannst auf das geballte Wissen der Welt zugreifen. Dein Name ist "Freshy".
 
 🏢 UNTERNEHMEN:
 - Name: FreshGO | Standort: Lübeck | Motto: Frisch. Schnell. Zu dir.
