@@ -560,7 +560,7 @@ Antworte immer auf Deutsch, freundlich, kurz und hilfreich. Wenn du etwas nicht 
             } catch (error) {
                 console.error('Chat error:', error);
                 removeTypingIndicator();
-                appendBotMessage('Ups, da ist etwas schiefgelaufen. 😅 Bitte versuche es gleich nochmal!');
+                appendBotMessage('Fehler: ' + (error.message || JSON.stringify(error)));
             }
 
             chatSendBtn.disabled = false;
