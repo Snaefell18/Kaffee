@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshGO Executive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #f6f5f1;
+            --surface: #ffffff;
+            --surface2: #f0efeb;
+            --border: #e4e2dc;
+            --text: #1a1a1a;
+            --text-dim: #8a8680;
+            --accent: #2d6a4f;
+            --accent-light: #d8f3dc;
+            --accent-hover: #1b4332;
+            --red: #d64545;
+            --red-light: #fce8e8;
+            --green: #2d6a4f;
+            --green-light: #d8f3dc;
+            --yellow: #c77f0a;
+            --yellow-light: #fef3cd;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, .serif { font-family: 'Fraunces', serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 26px 24px;
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.3s, transform 0.2s;
+            box-shadow: var(--shadow-sm);
+        }
+        .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+        .tab-btn {
+            padding: 9px 18px;
+            font-size: 13.5px;
+            font-weight: 500;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.25s;
+            letter-spacing: 0.01em;
+            font-family: 'Outfit', sans-serif;
+        }
+        .tab-btn:hover { color: var(--text); background: var(--surface2); }
+        .tab-btn.active {
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            border-color: var(--accent);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .btn-primary:active { transform: scale(0.97); }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 13px;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover { border-color: #bbb; background: var(--surface2); }
+
+        .chart-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .news-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px 24px;
+            transition: box-shadow 0.3s;
+            box-shadow: var(--shadow-sm);
+        }
+        .news-card:hover { box-shadow: var(--shadow-md); }
+
+        .strategy-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px 24px;
+            border-left: 3px solid var(--accent);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .trend-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .trend-positive { background: var(--green-light); color: var(--green); }
+        .trend-negative { background: var(--red-light); color: var(--red); }
+        .trend-neutral { background: var(--surface2); color: var(--text-dim); }
+
+        .satisfaction-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.25);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .satisfaction-modal.open { opacity: 1; pointer-events: all; }
+
+        .loading-pulse { animation: pulse 1.5s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up { animation: fadeUp 0.5s ease forwards; }
+        .fade-up-d1 { animation-delay: 0.05s; opacity: 0; }
+        .fade-up-d2 { animation-delay: 0.1s; opacity: 0; }
+        .fade-up-d3 { animation-delay: 0.15s; opacity: 0; }
+        .fade-up-d4 { animation-delay: 0.2s; opacity: 0; }
+
+        .slider-track {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border);
+            outline: none;
+        }
+        .slider-track::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(45,106,79,0.3);
+        }
+
+        .traffic-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.3s;
+        }
+        .traffic-card:hover { box-shadow: var(--shadow-md); }
+
+        .traffic-dot {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .traffic-green { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.4); }
+        .traffic-yellow { background: #eab308; box-shadow: 0 0 8px rgba(234,179,8,0.4); }
+        .traffic-red { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.4); }
+
+        .select-styled {
+            appearance: none;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 36px 10px 16px;
+            font-size: 14px;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text);
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238a8680' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            transition: border-color 0.2s;
+        }
+        .select-styled:hover { border-color: #bbb; }
+        .select-styled:focus { outline: none; border-color: var(--accent); }
+
+        .route-zone {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 20px;
+            border-radius: 12px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+        }
+
+        .pricing-row {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px 24px;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.3s, border-color 0.3s;
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            align-items: center;
+            gap: 20px;
+        }
+        .pricing-row:hover { box-shadow: var(--shadow-md); }
+        .pricing-row.has-change { border-color: rgba(45,106,79,0.3); }
+        .pricing-row.is-fixed { opacity: 0.6; }
+
+        .price-tag {
+            font-family: 'Fraunces', serif;
+            font-size: 20px;
+            font-weight: 600;
+            min-width: 72px;
+            text-align: right;
+        }
+        .price-new {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 110px;
+            justify-content: flex-end;
+        }
+        .price-arrow {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .price-arrow.up { background: var(--green-light); color: var(--green); }
+        .price-arrow.down { background: var(--red-light); color: var(--red); }
+        .price-arrow.same { background: var(--surface2); color: var(--text-dim); }
+
+        .pricing-reason {
+            font-size: 12.5px;
+            color: var(--text-dim);
+            line-height: 1.5;
+            margin-top: 4px;
+            max-width: 420px;
+        }
+
+        @media (max-width: 768px) {
+            .pricing-row {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .price-new, .price-tag { justify-content: flex-start; }
+        }
+
+        @keyframes spinPulse {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spin { animation: spinPulse 1s linear infinite; }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header style="background: var(--surface); border-bottom: 1px solid var(--border);" class="sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <img src="logo.jpg" alt="FreshGO" class="w-9 h-9 rounded-lg object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="w-9 h-9 rounded-lg items-center justify-center text-lg font-bold" style="background: var(--accent); color: #fff; display: none;">F</div>
+                    <div>
+                        <h1 class="text-lg leading-tight tracking-tight" style="font-style: italic; font-weight: 600;">FreshGO Executive</h1>
+                    </div>
+                </div>
+                <div class="h-5 w-px mx-1" style="background: var(--border);"></div>
+                <nav class="flex gap-1.5">
+                    <button class="tab-btn active" data-tab="controlling">Controlling</button>
+                    <button class="tab-btn" data-tab="umwelt">Umweltanalyse</button>
+                    <button class="tab-btn" data-tab="routen">Routenoptimierung</button>
+                    <button class="tab-btn" data-tab="pricing">Dynamic Pricing</button>
+                </nav>
+            </div>
+            <div class="text-xs font-medium" style="color: var(--text-dim);">
+                <span id="live-clock"></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTROLLING TAB -->
+    <main id="tab-controlling" class="max-w-7xl mx-auto px-6 py-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+            <div class="kpi-card fade-up fade-up-d1">
+                <div class="text-xs font-medium uppercase tracking-widest mb-3" style="color: var(--text-dim);">Gesamtumsatz</div>
+                <div class="text-3xl font-semibold serif" id="kpi-revenue">–</div>
+                <div class="text-xs mt-2" style="color: var(--text-dim);" id="kpi-revenue-sub"></div>
+            </div>
+            <div class="kpi-card fade-up fade-up-d2">
+                <div class="text-xs font-medium uppercase tracking-widest mb-3" style="color: var(--text-dim);">Bestellungen</div>
+                <div class="text-3xl font-semibold serif" id="kpi-orders">–</div>
+                <div class="text-xs mt-2" style="color: var(--text-dim);" id="kpi-orders-sub"></div>
+            </div>
+            <div class="kpi-card fade-up fade-up-d3">
+                <div class="text-xs font-medium uppercase tracking-widest mb-3" style="color: var(--text-dim);">Registrierte Kunden</div>
+                <div class="text-3xl font-semibold serif" id="kpi-customers">–</div>
+                <div class="text-xs mt-2" style="color: var(--text-dim);" id="kpi-customers-sub"></div>
+            </div>
+            <div class="kpi-card fade-up fade-up-d4" style="cursor: pointer;" id="satisfaction-card">
+                <div class="text-xs font-medium uppercase tracking-widest mb-3" style="color: var(--text-dim);">Kundenzufriedenheit</div>
+                <div class="flex items-end gap-2">
+                    <div class="text-3xl font-semibold serif" id="kpi-satisfaction">–</div>
+                    <span class="text-base mb-0.5" style="color: var(--text-dim);">%</span>
+                </div>
+                <div class="text-xs mt-2 flex items-center gap-1.5" style="color: var(--accent);">
+                    <svg width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-10 10a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168l10-10z"/></svg>
+                    Klicken zum Anpassen
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container mb-6">
+            <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+                <h2 class="text-xl serif" style="font-style: italic;">Umsatz pro Monat</h2>
+                <div class="flex gap-2 flex-wrap">
+                    <button class="btn-secondary" id="toggle-regression-btn">📈 Regression anzeigen</button>
+                    <button class="btn-secondary" id="add-trend-to-regression-btn" style="display:none;">🌍 Trendwert hinzufügen</button>
+                </div>
+            </div>
+            <div style="position: relative; height: 360px;">
+                <canvas id="revenue-chart"></canvas>
+            </div>
+            <div id="regression-info" class="mt-4 text-sm" style="color: var(--text-dim); display: none;"></div>
+        </div>
+
+        <div class="chart-container">
+            <h2 class="text-xl serif mb-5" style="font-style: italic;">Bestseller</h2>
+            <div id="top-products" class="space-y-3"></div>
+        </div>
+    </main>
+
+    <!-- UMWELTANALYSE TAB -->
+    <main id="tab-umwelt" class="max-w-7xl mx-auto px-6 py-8" style="display: none;">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <h2 class="text-2xl serif" style="font-style: italic;">Umweltanalyse</h2>
+            <button class="btn-primary" id="fetch-news-btn">🔍 Analyse starten</button>
+        </div>
+
+        <div class="kpi-card mb-6" id="trend-score-section" style="display: none;">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color: var(--text-dim);">Umwelt-Trendwert</div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-4xl font-semibold serif" id="trend-score-value">–</span>
+                        <span id="trend-badge" class="trend-badge trend-neutral">–</span>
+                    </div>
+                    <div class="text-xs mt-2" style="color: var(--text-dim);">Skala: -100 (sehr negativ) bis +100 (sehr positiv)</div>
+                </div>
+                <button class="btn-secondary" id="add-trend-btn">➕ Zur Regression hinzufügen</button>
+            </div>
+        </div>
+
+        <div id="news-loading" style="display: none;" class="text-center py-16">
+            <div class="loading-pulse text-3xl mb-3">🔍</div>
+            <div style="color: var(--text-dim);">Analysiere aktuelle Umweltdaten mit KI...</div>
+        </div>
+
+        <div id="news-container" class="space-y-4 mb-8"></div>
+
+        <div id="strategies-section" style="display: none;">
+            <h3 class="text-xl serif mb-4" style="font-style: italic;">Abgeleitete Strategien für FreshGO</h3>
+            <div id="strategies-container" class="space-y-4"></div>
+        </div>
+    </main>
+
+    <!-- ROUTENOPTIMIERUNG TAB -->
+    <main id="tab-routen" class="max-w-7xl mx-auto px-6 py-8" style="display: none;">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <h2 class="text-2xl serif" style="font-style: italic;">Routenoptimierung</h2>
+            <div class="flex items-center gap-3">
+                <select class="select-styled" id="route-city-select">
+                    <option value="luebeck">Lübeck</option>
+                    <option value="hamburg">Hamburg</option>
+                </select>
+                <button class="btn-primary" id="fetch-traffic-btn">🚦 Verkehrsanalyse starten</button>
+            </div>
+        </div>
+
+        <div id="traffic-loading" style="display: none;" class="text-center py-16">
+            <div class="text-3xl mb-3 spin">⏳</div>
+            <div style="color: var(--text-dim);">Analysiere aktuelle Verkehrslage...</div>
+        </div>
+
+        <div id="traffic-error" style="display: none;"></div>
+
+        <div id="traffic-results" style="display: none;">
+            <div class="kpi-card mb-6" id="traffic-summary-card">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div class="traffic-dot" id="traffic-overall-dot"></div>
+                    <div>
+                        <div class="text-xs font-medium uppercase tracking-widest mb-1" style="color: var(--text-dim);">Gesamtlage <span id="traffic-city-label"></span></div>
+                        <div class="text-2xl font-semibold serif" id="traffic-overall-label">–</div>
+                    </div>
+                    <div style="margin-left: auto; text-align: right;">
+                        <div class="text-xs font-medium uppercase tracking-widest mb-1" style="color: var(--text-dim);">Ø Zusatzverzögerung pro Stopp</div>
+                        <div class="text-2xl font-semibold serif" id="traffic-delay-value">–</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-lg serif mb-4" style="font-style: italic;">Zonen-Details</h3>
+            <div id="traffic-zones" class="space-y-3"></div>
+
+            <div class="chart-container mt-6" id="traffic-tips-section">
+                <h3 class="text-lg serif mb-3" style="font-style: italic;">Empfehlungen</h3>
+                <div id="traffic-tips" class="text-sm" style="color: var(--text-dim); line-height: 1.7;"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- DYNAMIC PRICING TAB -->
+    <main id="tab-pricing" class="max-w-7xl mx-auto px-6 py-8" style="display: none;">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <div>
+                <h2 class="text-2xl serif" style="font-style: italic;">Dynamic Pricing</h2>
+                <p class="text-sm mt-1" style="color: var(--text-dim);">KI-gestützte Preisoptimierung basierend auf Marktanalyse</p>
+            </div>
+            <div class="flex gap-2">
+                <button class="btn-primary" id="analyze-prices-btn">🤖 Preise analysieren</button>
+                <button class="btn-primary" id="apply-prices-btn" style="display: none; background: var(--green);">✓ Neue Preise übernehmen</button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="pricing-loading" style="display: none;" class="text-center py-16">
+            <div class="text-3xl mb-3 spin">⏳</div>
+            <div style="color: var(--text-dim);">KI analysiert Marktdaten und optimale Preispunkte...</div>
+        </div>
+
+        <!-- Info banner -->
+        <div id="pricing-info-banner" class="mb-6" style="display: none;">
+            <div style="background: var(--accent-light); border: 1px solid rgba(45,106,79,0.2); border-radius: 12px; padding: 14px 20px;" class="flex items-center gap-3">
+                <span style="font-size: 18px;">💡</span>
+                <div class="text-sm" style="color: var(--accent);">
+                    <strong>Preisvorschläge erstellt.</strong> Prüfe die Empfehlungen und übernimm sie mit dem grünen Button in die Datenbank. Kaffee (Standardprodukt) bleibt unverändert.
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div id="pricing-products" class="space-y-3"></div>
+
+        <!-- Empty state -->
+        <div id="pricing-empty" class="text-center py-16" style="display: none;">
+            <div class="text-4xl mb-3">📦</div>
+            <div style="color: var(--text-dim);">Keine Produkte gefunden. Lade zuerst Bestelldaten.</div>
+        </div>
+    </main>
+
+    <!-- SATISFACTION MODAL -->
+    <div class="satisfaction-modal" id="satisfaction-modal">
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 32px; width: 90%; max-width: 420px; box-shadow: var(--shadow-md);">
+            <h3 class="text-xl serif mb-2" style="font-style: italic;">Kundenzufriedenheit</h3>
+            <p class="text-sm mb-6" style="color: var(--text-dim);">Aktuellen Wert einstellen (0–100%)</p>
+            <div class="flex items-center gap-4 mb-6">
+                <input type="range" min="0" max="100" value="85" class="slider-track flex-1" id="satisfaction-slider">
+                <span class="text-2xl font-semibold serif" style="min-width: 56px; text-align: right;" id="satisfaction-preview">85%</span>
+            </div>
+            <div class="flex gap-3">
+                <button class="btn-primary flex-1" id="save-satisfaction-btn">Speichern</button>
+                <button class="btn-secondary flex-1" id="cancel-satisfaction-btn">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBddDHPUptynMcVWvDKGVQOnTNwitujCEg",
+            authDomain: "kaffee-544f4.firebaseapp.com",
+            projectId: "kaffee-544f4",
+            storageBucket: "kaffee-544f4.firebasestorage.app",
+            messagingSenderId: "1082256261108",
+            appId: "1:1082256261108:web:374edc340875e48ecb83a1",
+            measurementId: "G-TRZ50P7JDH"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'coffee-drop-app';
+
+        // ============ STATE ============
+        let allOrders = [];
+        let satisfactionValue = 85;
+        let revenueChart = null;
+        let showRegression = false;
+        let envTrendValue = null;
+        let envTrendAddedToRegression = false;
+
+        // ============ CLOCK ============
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').textContent = now.toLocaleString('de-DE', {
+                weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ============ TAB SWITCHING ============
+        const tabs = ['controlling', 'umwelt', 'routen', 'pricing'];
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const tab = btn.dataset.tab;
+                tabs.forEach(t => {
+                    document.getElementById('tab-' + t).style.display = t === tab ? '' : 'none';
+                });
+            });
+        });
+
+        // ============ SATISFACTION MODAL ============
+        const satModal = document.getElementById('satisfaction-modal');
+        const satSlider = document.getElementById('satisfaction-slider');
+        const satPreview = document.getElementById('satisfaction-preview');
+
+        document.getElementById('satisfaction-card').addEventListener('click', () => {
+            satSlider.value = satisfactionValue;
+            satPreview.textContent = satisfactionValue + '%';
+            satModal.classList.add('open');
+        });
+
+        satSlider.addEventListener('input', () => {
+            satPreview.textContent = satSlider.value + '%';
+        });
+
+        document.getElementById('cancel-satisfaction-btn').addEventListener('click', () => {
+            satModal.classList.remove('open');
+        });
+
+        document.getElementById('save-satisfaction-btn').addEventListener('click', async () => {
+            satisfactionValue = parseInt(satSlider.value);
+            document.getElementById('kpi-satisfaction').textContent = satisfactionValue;
+            satModal.classList.remove('open');
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'executive_settings', 'satisfaction'), {
+                    value: satisfactionValue,
+                    updatedAt: new Date().toISOString()
+                });
+            } catch (e) { console.warn('Could not save satisfaction:', e); }
+        });
+
+        satModal.addEventListener('click', (e) => {
+            if (e.target === satModal) satModal.classList.remove('open');
+        });
+
+        // ============ AI HELPER ============
+        async function callAI(prompt, systemPrompt) {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [{ role: 'user', content: prompt }],
+                    system: systemPrompt || 'Du bist ein Business-Analyst. Antworte ausschließlich mit validem JSON ohne Markdown-Formatierung.',
+                    max_tokens: 4000
+                })
+            });
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+
+            let reply = data.reply || '';
+            // Clean markdown fences
+            reply = reply.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+
+            // Fix common truncation issues: try to close unclosed strings/objects
+            reply = repairJSON(reply);
+
+            return JSON.parse(reply);
+        }
+
+        function repairJSON(str) {
+            // If it already parses, return as-is
+            try { JSON.parse(str); return str; } catch(e) {}
+
+            // Remove trailing comma before attempting fixes
+            str = str.replace(/,\s*$/, '');
+
+            // Count braces and brackets
+            let openBraces = (str.match(/{/g) || []).length;
+            let closeBraces = (str.match(/}/g) || []).length;
+            let openBrackets = (str.match(/\[/g) || []).length;
+            let closeBrackets = (str.match(/]/g) || []).length;
+
+            // Check for unterminated string - find last quote
+            const lastQuote = str.lastIndexOf('"');
+            const afterLastQuote = str.substring(lastQuote + 1).trim();
+
+            // If after last quote there's no proper JSON continuation, the string might be truncated
+            if (afterLastQuote === '' || afterLastQuote === ',') {
+                // Truncated inside a string value - close it
+                str = str.substring(0, lastQuote + 1);
+                // Remove trailing comma
+                str = str.replace(/,\s*$/, '');
+            }
+
+            // Try to find a reasonable truncation point - last complete object in an array
+            // Try progressively more aggressive repairs
+            for (let attempt = 0; attempt < 5; attempt++) {
+                let repaired = str;
+
+                // Close unclosed brackets and braces
+                let ob = (repaired.match(/{/g) || []).length;
+                let cb = (repaired.match(/}/g) || []).length;
+                let oB = (repaired.match(/\[/g) || []).length;
+                let cB = (repaired.match(/]/g) || []).length;
+
+                // Remove trailing commas
+                repaired = repaired.replace(/,\s*$/, '');
+
+                // Add closing brackets/braces
+                for (let i = 0; i < oB - cB; i++) repaired += ']';
+                for (let i = 0; i < ob - cb; i++) repaired += '}';
+
+                try { JSON.parse(repaired); return repaired; } catch(e) {}
+
+                // More aggressive: try to cut back to the last complete element
+                // Find the last }, or ] and truncate there
+                const lastClose = Math.max(str.lastIndexOf('}'), str.lastIndexOf(']'));
+                if (lastClose > 0) {
+                    str = str.substring(0, lastClose + 1);
+                } else {
+                    break;
+                }
+            }
+
+            // Final fallback: truncate at last complete object
+            let last = str.lastIndexOf('}');
+            if (last > 0) {
+                str = str.substring(0, last + 1);
+                let ob = (str.match(/{/g) || []).length;
+                let cb = (str.match(/}/g) || []).length;
+                let oB = (str.match(/\[/g) || []).length;
+                let cB = (str.match(/]/g) || []).length;
+                str = str.replace(/,\s*$/, '');
+                for (let i = 0; i < oB - cB; i++) str += ']';
+                for (let i = 0; i < ob - cb; i++) str += '}';
+            }
+
+            return str;
+        }
+
+        // ============ LOAD DATA ============
+        async function loadAllData() {
+            try {
+                try {
+                    const satDoc = await getDoc(doc(db, 'artifacts', appId, 'executive_settings', 'satisfaction'));
+                    if (satDoc.exists()) satisfactionValue = satDoc.data().value || 85;
+                } catch (e) { console.warn('Satisfaction load error:', e); }
+
+                document.getElementById('kpi-satisfaction').textContent = satisfactionValue;
+
+                const ordersSnap = await getDocs(collection(db, 'artifacts', appId, 'public_orders'));
+                allOrders = [];
+                ordersSnap.forEach(d => allOrders.push({ id: d.id, ...d.data() }));
+
+                const uniqueUsers = new Set();
+                allOrders.forEach(o => { if (o.userId) uniqueUsers.add(o.userId); });
+
+                let totalRevenue = 0;
+                allOrders.forEach(o => { totalRevenue += (o.totalPrice || 0); });
+
+                document.getElementById('kpi-revenue').textContent = formatCurrency(totalRevenue);
+                document.getElementById('kpi-revenue-sub').textContent = `Ø ${formatCurrency(allOrders.length > 0 ? totalRevenue / allOrders.length : 0)} pro Bestellung`;
+                document.getElementById('kpi-orders').textContent = allOrders.length;
+                document.getElementById('kpi-orders-sub').textContent = `${uniqueUsers.size} verschiedene Kunden`;
+                document.getElementById('kpi-customers').textContent = uniqueUsers.size;
+                document.getElementById('kpi-customers-sub').textContent = `Aus ${allOrders.length} Bestellungen`;
+
+                buildRevenueChart();
+                buildTopProducts();
+                buildProductCatalog();
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('kpi-revenue').textContent = 'Fehler';
+            }
+        }
+
+        function formatCurrency(val) {
+            return val.toFixed(2).replace('.', ',') + ' €';
+        }
+
+        // ============ REVENUE CHART ============
+        function buildRevenueChart() {
+            const monthlyData = {};
+            allOrders.forEach(order => {
+                const date = order.createdAt ? new Date(order.createdAt) : null;
+                if (!date) return;
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                if (!monthlyData[key]) monthlyData[key] = 0;
+                monthlyData[key] += (order.totalPrice || 0);
+            });
+
+            const sortedKeys = Object.keys(monthlyData).sort();
+            const labels = sortedKeys.map(k => {
+                const [y, m] = k.split('-');
+                const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+                return `${monthNames[parseInt(m) - 1]} ${y}`;
+            });
+            const values = sortedKeys.map(k => monthlyData[k]);
+
+            const ctx = document.getElementById('revenue-chart').getContext('2d');
+            if (revenueChart) revenueChart.destroy();
+
+            const datasets = [{
+                label: 'Umsatz (€)',
+                data: values,
+                backgroundColor: 'rgba(45, 106, 79, 0.1)',
+                borderColor: '#2d6a4f',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#2d6a4f',
+                pointBorderColor: '#2d6a4f',
+                pointRadius: 5,
+                pointHoverRadius: 8,
+            }];
+
+            if (showRegression && values.length >= 2) {
+                const reg = linearRegression(values);
+                const regLine = values.map((_, i) => reg.slope * i + reg.intercept);
+
+                datasets.push({
+                    label: 'Lineare Regression',
+                    data: regLine,
+                    borderColor: '#d64545',
+                    borderWidth: 2,
+                    borderDash: [8, 4],
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0,
+                });
+
+                const forecastCount = 3;
+                const forecastLabels = [];
+                const lastKey = sortedKeys[sortedKeys.length - 1];
+                let [fy, fm] = lastKey.split('-').map(Number);
+                for (let i = 0; i < forecastCount; i++) {
+                    fm++;
+                    if (fm > 12) { fm = 1; fy++; }
+                    const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+                    forecastLabels.push(`${monthNames[fm - 1]} ${fy}`);
+                }
+
+                const forecastValues = [];
+                for (let i = 0; i < forecastCount; i++) {
+                    forecastValues.push(reg.slope * (values.length + i) + reg.intercept);
+                }
+
+                labels.push(...forecastLabels);
+                datasets[0].data = [...values, ...Array(forecastCount).fill(null)];
+                datasets[1].data = [...regLine, ...forecastValues];
+
+                const regressionInfoEl = document.getElementById('regression-info');
+                regressionInfoEl.style.display = '';
+                let infoText = `<strong>Regression:</strong> y = ${reg.slope.toFixed(2)}x + ${reg.intercept.toFixed(2)} · R² = ${reg.r2.toFixed(3)} · Steigung: ${reg.slope > 0 ? '+' : ''}${reg.slope.toFixed(2)} €/Monat`;
+                if (envTrendAddedToRegression && envTrendValue !== null) {
+                    infoText += ` · <span style="color: var(--accent);">Umwelt-Trendwert (${envTrendValue}) einbezogen</span>`;
+                }
+                regressionInfoEl.innerHTML = infoText;
+            } else {
+                document.getElementById('regression-info').style.display = 'none';
+            }
+
+            revenueChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { labels: { color: '#8a8680', font: { family: 'Outfit' } } },
+                        tooltip: {
+                            backgroundColor: '#fff',
+                            titleColor: '#1a1a1a',
+                            bodyColor: '#1a1a1a',
+                            borderColor: '#e4e2dc',
+                            borderWidth: 1,
+                            cornerRadius: 10,
+                            padding: 12,
+                            callbacks: {
+                                label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y.toFixed(2).replace('.', ',') + ' €' : '–'}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#aaa', font: { family: 'Outfit', size: 11 } },
+                            grid: { color: 'rgba(0,0,0,0.04)' }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#aaa',
+                                font: { family: 'Outfit', size: 11 },
+                                callback: (v) => v.toFixed(0) + ' €'
+                            },
+                            grid: { color: 'rgba(0,0,0,0.04)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function linearRegression(values) {
+            const n = values.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            for (let i = 0; i < n; i++) {
+                let y = values[i];
+                if (envTrendAddedToRegression && envTrendValue !== null) {
+                    y = y * (1 + (envTrendValue / 200) * (i / n));
+                }
+                sumX += i; sumY += y; sumXY += i * y; sumX2 += i * i;
+            }
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            const yMean = sumY / n;
+            let ssTot = 0, ssRes = 0;
+            for (let i = 0; i < n; i++) {
+                let y = values[i];
+                if (envTrendAddedToRegression && envTrendValue !== null) {
+                    y = y * (1 + (envTrendValue / 200) * (i / n));
+                }
+                ssTot += (y - yMean) ** 2;
+                ssRes += (y - (slope * i + intercept)) ** 2;
+            }
+            const r2 = ssTot === 0 ? 1 : 1 - (ssRes / ssTot);
+            return { slope, intercept, r2 };
+        }
+
+        document.getElementById('toggle-regression-btn').addEventListener('click', () => {
+            showRegression = !showRegression;
+            document.getElementById('toggle-regression-btn').textContent = showRegression ? '📉 Regression ausblenden' : '📈 Regression anzeigen';
+            document.getElementById('add-trend-to-regression-btn').style.display = showRegression ? '' : 'none';
+            buildRevenueChart();
+        });
+
+        document.getElementById('add-trend-to-regression-btn').addEventListener('click', () => {
+            if (envTrendValue === null) {
+                alert('Bitte zuerst eine Umweltanalyse durchführen.');
+                return;
+            }
+            envTrendAddedToRegression = !envTrendAddedToRegression;
+            document.getElementById('add-trend-to-regression-btn').textContent = envTrendAddedToRegression ? '🌍 Trendwert entfernen' : '🌍 Trendwert hinzufügen';
+            buildRevenueChart();
+        });
+
+        // ============ BESTSELLER (ABC-ANALYSE) ============
+        function buildTopProducts() {
+            const productCounts = {};
+            allOrders.forEach(order => {
+                const items = order.items || {};
+                for (const [name, item] of Object.entries(items)) {
+                    if (!productCounts[name]) productCounts[name] = { qty: 0, revenue: 0 };
+                    productCounts[name].qty += (item.quantity || 1);
+                    productCounts[name].revenue += (item.price || 0) * (item.quantity || 1);
+                }
+            });
+
+            const sorted = Object.entries(productCounts).sort((a, b) => b[1].revenue - a[1].revenue);
+            const maxRevenue = sorted.length > 0 ? sorted[0][1].revenue : 1;
+            const container = document.getElementById('top-products');
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-dim);" class="text-center py-6">Keine Produktdaten vorhanden.</div>';
+                return;
+            }
+
+            // ABC-Analyse: kumulierter Umsatzanteil
+            const totalRevenue = sorted.reduce((sum, [, d]) => sum + d.revenue, 0);
+            let cumulative = 0;
+            const abcData = sorted.map(([name, data]) => {
+                cumulative += data.revenue;
+                const cumulativePct = totalRevenue > 0 ? (cumulative / totalRevenue) * 100 : 0;
+                let abc;
+                if (cumulativePct <= 80) abc = 'A';
+                else if (cumulativePct <= 95) abc = 'B';
+                else abc = 'C';
+                return { name, ...data, abc };
+            });
+
+            const abcColors = {
+                A: { bg: 'var(--green-light)', color: 'var(--green)' },
+                B: { bg: 'var(--yellow-light)', color: 'var(--yellow)' },
+                C: { bg: 'var(--surface2)', color: 'var(--text-dim)' }
+            };
+
+            container.innerHTML = abcData.slice(0, 10).map(item => {
+                const pct = (item.revenue / maxRevenue * 100).toFixed(0);
+                const c = abcColors[item.abc];
+                return `
+                    <div class="flex items-center gap-4">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-md" style="background: ${c.bg}; color: ${c.color}; min-width: 28px; text-align: center;">${item.abc}</span>
+                        <div class="w-28 text-sm font-medium truncate">${item.name}</div>
+                        <div class="flex-1 h-7 rounded-md overflow-hidden" style="background: var(--surface2);">
+                            <div class="h-full rounded-md flex items-center px-3" style="width: ${pct}%; background: linear-gradient(90deg, rgba(45,106,79,0.2), rgba(45,106,79,0.06)); min-width: 40px;">
+                                <span class="text-xs font-semibold" style="color: var(--accent);">${item.qty}×</span>
+                            </div>
+                        </div>
+                        <div class="text-sm font-semibold w-20 text-right">${formatCurrency(item.revenue)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============ UMWELTANALYSE ============
+        document.getElementById('fetch-news-btn').addEventListener('click', fetchEnvironmentNews);
+        document.getElementById('add-trend-btn').addEventListener('click', () => {
+            if (envTrendValue === null) return;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-tab="controlling"]').classList.add('active');
+            tabs.forEach(t => {
+                document.getElementById('tab-' + t).style.display = t === 'controlling' ? '' : 'none';
+            });
+            showRegression = true;
+            envTrendAddedToRegression = true;
+            document.getElementById('toggle-regression-btn').textContent = '📉 Regression ausblenden';
+            document.getElementById('add-trend-to-regression-btn').style.display = '';
+            document.getElementById('add-trend-to-regression-btn').textContent = '🌍 Trendwert entfernen';
+            buildRevenueChart();
+        });
+
+        async function fetchEnvironmentNews() {
+            const loadingEl = document.getElementById('news-loading');
+            const newsContainer = document.getElementById('news-container');
+            const strategiesSection = document.getElementById('strategies-section');
+            const trendSection = document.getElementById('trend-score-section');
+
+            loadingEl.style.display = '';
+            newsContainer.innerHTML = '';
+            strategiesSection.style.display = 'none';
+            trendSection.style.display = 'none';
+
+            const prompt = `Du bist ein Analyst für FreshGO, einen Kaffee- und Getränke-Lieferservice in Lübeck.
+
+Analysiere aktuelle Trends für einen Kaffee-Lieferservice in Deutschland:
+- Kaffee-/Getränkemarkt (Preise, Trends)
+- Lieferservice-Branche (Wettbewerb, Technologie)
+- Nachhaltigkeit (Verpackung, CO2)
+- Verbraucherverhalten
+- Lokale Wirtschaft Norddeutschland
+
+WICHTIG: Antworte NUR mit validem JSON. Keine Erklärungen, kein Markdown.
+Halte dich KURZ. Maximal 4 News und 3 Strategien.
+
+Format:
+{"trend_score": <-100 bis +100>, "trend_label": "<kurz>", "news": [{"title": "<kurz>", "summary": "<1 Satz>", "relevance": "<1 Satz>", "sentiment": "positive|negative|neutral"}], "strategies": [{"title": "<kurz>", "description": "<1-2 Sätze>", "priority": "high|medium|low"}]}`;
+
+            try {
+                const parsed = await callAI(prompt, 'Antworte NUR mit validem JSON. Kein Markdown, keine Backticks, keine Erklärungen. Halte alle Texte kurz.');
+                loadingEl.style.display = 'none';
+
+                envTrendValue = parsed.trend_score || 0;
+                document.getElementById('trend-score-value').textContent = envTrendValue > 0 ? '+' + envTrendValue : envTrendValue;
+
+                const badge = document.getElementById('trend-badge');
+                if (envTrendValue > 20) {
+                    badge.className = 'trend-badge trend-positive';
+                    badge.textContent = '▲ ' + (parsed.trend_label || 'Positiv');
+                } else if (envTrendValue < -20) {
+                    badge.className = 'trend-badge trend-negative';
+                    badge.textContent = '▼ ' + (parsed.trend_label || 'Negativ');
+                } else {
+                    badge.className = 'trend-badge trend-neutral';
+                    badge.textContent = '● ' + (parsed.trend_label || 'Neutral');
+                }
+                trendSection.style.display = '';
+
+                if (parsed.news && parsed.news.length) {
+                    newsContainer.innerHTML = '<h3 class="text-xl serif mb-3" style="font-style: italic;">Aktuelle News & Trends</h3>' +
+                        parsed.news.map(n => {
+                            const sentColor = n.sentiment === 'positive' ? 'var(--green)' : n.sentiment === 'negative' ? 'var(--red)' : 'var(--text-dim)';
+                            const sentIcon = n.sentiment === 'positive' ? '▲' : n.sentiment === 'negative' ? '▼' : '●';
+                            return `
+                                <div class="news-card">
+                                    <div class="flex items-start justify-between gap-3 mb-2">
+                                        <h4 class="font-semibold text-base">${n.title}</h4>
+                                        <span style="color: ${sentColor}; font-size: 12px; flex-shrink: 0; font-weight: 600;">${sentIcon}</span>
+                                    </div>
+                                    <p class="text-sm mb-2" style="color: var(--text-dim); line-height: 1.6;">${n.summary}</p>
+                                    <p class="text-xs" style="color: var(--accent);">↳ ${n.relevance}</p>
+                                </div>
+                            `;
+                        }).join('');
+                }
+
+                if (parsed.strategies && parsed.strategies.length) {
+                    strategiesSection.style.display = '';
+                    document.getElementById('strategies-container').innerHTML = parsed.strategies.map(s => {
+                        const prioColors = { high: 'var(--red)', medium: 'var(--yellow)', low: 'var(--text-dim)' };
+                        const prioLabels = { high: 'Hoch', medium: 'Mittel', low: 'Niedrig' };
+                        return `
+                            <div class="strategy-card">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-semibold">${s.title}</h4>
+                                    <span class="text-xs font-semibold px-2 py-1 rounded-md" style="background: var(--surface2); color: ${prioColors[s.priority] || 'var(--text-dim)'};">
+                                        Priorität: ${prioLabels[s.priority] || s.priority}
+                                    </span>
+                                </div>
+                                <p class="text-sm" style="color: var(--text-dim); line-height: 1.6;">${s.description}</p>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+            } catch (error) {
+                console.error('AI Analysis error:', error);
+                loadingEl.style.display = 'none';
+                newsContainer.innerHTML = `
+                    <div class="news-card" style="border-color: var(--red);">
+                        <h4 class="font-semibold mb-2" style="color: var(--red);">Fehler bei der Analyse</h4>
+                        <p class="text-sm" style="color: var(--text-dim);">${error.message}</p>
+                        <p class="text-xs mt-2" style="color: var(--text-dim);">Stelle sicher, dass dein /api/chat Endpoint verfügbar ist.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ============ ROUTENOPTIMIERUNG ============
+        document.getElementById('fetch-traffic-btn').addEventListener('click', fetchTrafficData);
+
+        async function fetchTrafficData() {
+            const city = document.getElementById('route-city-select').value;
+            const cityLabel = city === 'luebeck' ? 'Lübeck' : 'Hamburg';
+            const loadingEl = document.getElementById('traffic-loading');
+            const resultsEl = document.getElementById('traffic-results');
+            const errorEl = document.getElementById('traffic-error');
+
+            loadingEl.style.display = '';
+            resultsEl.style.display = 'none';
+            errorEl.style.display = 'none';
+
+            const now = new Date();
+            const day = now.toLocaleDateString('de-DE', { weekday: 'long' });
+            const time = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+            const zones = city === 'luebeck'
+                ? ['Innenstadt/Altstadt', 'St. Lorenz', 'Moisling', 'Travemünde', 'Kücknitz']
+                : ['Innenstadt/HafenCity', 'Altona', 'Eimsbüttel', 'Wandsbek', 'Harburg'];
+
+            const prompt = `Es ist ${day}, ${time} Uhr. Schätze die aktuelle Verkehrslage in ${cityLabel} für einen Lieferservice ein.
+
+Bewerte diese Zonen: ${zones.join(', ')}
+
+WICHTIG: Antworte NUR mit validem JSON. Kurze Texte.
+
+Format:
+{"overall_status": "green|yellow|red", "overall_label": "<z.B. Mäßig>", "avg_delay_minutes": <Zahl>, "zones": [{"name": "<Zone>", "status": "green|yellow|red", "delay_minutes": <Zahl>, "reason": "<1 kurzer Satz>"}], "tips": ["<Tipp 1>", "<Tipp 2>"]}`;
+
+            try {
+                const parsed = await callAI(prompt, 'Du bist ein Verkehrsanalyst. Antworte NUR mit validem JSON. Kein Markdown. Halte Texte kurz.');
+                loadingEl.style.display = 'none';
+                resultsEl.style.display = '';
+
+                // Overall
+                const dotEl = document.getElementById('traffic-overall-dot');
+                dotEl.className = 'traffic-dot traffic-' + (parsed.overall_status || 'yellow');
+                document.getElementById('traffic-city-label').textContent = cityLabel;
+                document.getElementById('traffic-overall-label').textContent = parsed.overall_label || 'Unbekannt';
+                document.getElementById('traffic-delay-value').textContent = `+${parsed.avg_delay_minutes || 0} min`;
+
+                // Zones
+                const zonesEl = document.getElementById('traffic-zones');
+                zonesEl.innerHTML = (parsed.zones || []).map(z => {
+                    const statusLabels = { green: 'Frei', yellow: 'Mäßig', red: 'Stau' };
+                    const statusColors = { green: 'var(--green)', yellow: 'var(--yellow)', red: 'var(--red)' };
+                    const statusBg = { green: 'var(--green-light)', yellow: 'var(--yellow-light)', red: 'var(--red-light)' };
+                    return `
+                        <div class="route-zone">
+                            <div class="traffic-dot traffic-${z.status || 'yellow'}"></div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-sm">${z.name}</div>
+                                <div class="text-xs mt-0.5" style="color: var(--text-dim);">${z.reason || ''}</div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-semibold px-2 py-1 rounded-md" style="background: ${statusBg[z.status] || 'var(--surface2)'}; color: ${statusColors[z.status] || 'var(--text-dim)'};">
+                                    ${statusLabels[z.status] || z.status}
+                                </span>
+                                <div class="text-sm font-semibold mt-1" style="color: ${statusColors[z.status] || 'var(--text-dim)'};">+${z.delay_minutes || 0} min</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Tips
+                const tipsEl = document.getElementById('traffic-tips');
+                if (parsed.tips && parsed.tips.length) {
+                    tipsEl.innerHTML = parsed.tips.map(t => `<div style="margin-bottom: 6px;">→ ${t}</div>`).join('');
+                    document.getElementById('traffic-tips-section').style.display = '';
+                } else {
+                    document.getElementById('traffic-tips-section').style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error('Traffic analysis error:', error);
+                loadingEl.style.display = 'none';
+                errorEl.style.display = '';
+                errorEl.innerHTML = `
+                    <div class="news-card" style="border-color: var(--red);">
+                        <h4 class="font-semibold mb-2" style="color: var(--red);">Fehler bei der Verkehrsanalyse</h4>
+                        <p class="text-sm" style="color: var(--text-dim);">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ============ DYNAMIC PRICING ============
+        let currentProducts = {};    // { name: { price, cafe, cafeId, docField } }
+        let suggestedPrices = {};    // { name: { newPrice, reason, direction } }
+        const FIXED_PRODUCT = 'Kaffee';  // always stays the same
+
+        // Build product catalog from orders
+        function buildProductCatalog() {
+            currentProducts = {};
+            allOrders.forEach(order => {
+                const items = order.items || {};
+                for (const [name, item] of Object.entries(items)) {
+                    if (!currentProducts[name] || item.price > 0) {
+                        currentProducts[name] = {
+                            price: item.price || 0,
+                            cafe: order.cafeName || order.cafe || 'Unbekannt',
+                            cafeId: order.cafeId || null,
+                        };
+                    }
+                }
+            });
+            renderPricingProducts();
+        }
+
+        function renderPricingProducts() {
+            const container = document.getElementById('pricing-products');
+            const emptyEl = document.getElementById('pricing-empty');
+            const productNames = Object.keys(currentProducts).sort();
+
+            if (productNames.length === 0) {
+                container.innerHTML = '';
+                emptyEl.style.display = '';
+                return;
+            }
+            emptyEl.style.display = 'none';
+
+            container.innerHTML = productNames.map(name => {
+                const p = currentProducts[name];
+                const isFixed = name.toLowerCase() === FIXED_PRODUCT.toLowerCase();
+                const suggestion = suggestedPrices[name];
+                const hasChange = suggestion && !isFixed;
+
+                let newPriceHTML = '';
+                let reasonHTML = '';
+
+                if (hasChange) {
+                    const diff = suggestion.newPrice - p.price;
+                    const dir = diff > 0 ? 'up' : diff < 0 ? 'down' : 'same';
+                    const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '=';
+                    newPriceHTML = `
+                        <div class="price-new">
+                            <span style="color: var(--text-dim); font-size: 18px;">→</span>
+                            <span class="price-tag" style="color: ${dir === 'up' ? 'var(--green)' : dir === 'down' ? 'var(--red)' : 'var(--text-dim)'};">
+                                ${suggestion.newPrice.toFixed(2).replace('.', ',')} €
+                            </span>
+                            <div class="price-arrow ${dir}">${arrow}</div>
+                        </div>
+                    `;
+                    reasonHTML = `<div class="pricing-reason">${suggestion.reason || ''}</div>`;
+                } else if (isFixed && Object.keys(suggestedPrices).length > 0) {
+                    newPriceHTML = `
+                        <div class="price-new">
+                            <span class="text-xs font-medium px-2 py-1 rounded-md" style="background: var(--surface2); color: var(--text-dim);">Fixpreis</span>
+                        </div>
+                    `;
+                } else {
+                    newPriceHTML = '<div class="price-new"></div>';
+                }
+
+                return `
+                    <div class="pricing-row ${hasChange ? 'has-change' : ''} ${isFixed ? 'is-fixed' : ''}">
+                        <div>
+                            <div class="font-semibold text-sm">${name}</div>
+                            <div class="text-xs" style="color: var(--text-dim);">${p.cafe}</div>
+                            ${reasonHTML}
+                        </div>
+                        <div class="price-tag">${p.price.toFixed(2).replace('.', ',')} €</div>
+                        ${newPriceHTML}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('analyze-prices-btn').addEventListener('click', analyzePrices);
+
+        async function analyzePrices() {
+            const productNames = Object.keys(currentProducts);
+            if (productNames.length === 0) {
+                alert('Keine Produkte vorhanden. Bitte warte, bis die Bestelldaten geladen sind.');
+                return;
+            }
+
+            const loadingEl = document.getElementById('pricing-loading');
+            const infoBanner = document.getElementById('pricing-info-banner');
+            const applyBtn = document.getElementById('apply-prices-btn');
+
+            loadingEl.style.display = '';
+            infoBanner.style.display = 'none';
+            applyBtn.style.display = 'none';
+            suggestedPrices = {};
+
+            const productList = productNames
+                .filter(n => n.toLowerCase() !== FIXED_PRODUCT.toLowerCase())
+                .map(n => `- ${n}: aktuell ${currentProducts[n].price.toFixed(2)} €`)
+                .join('\n');
+
+            const orderCount = allOrders.length;
+            const now = new Date();
+            const hour = now.getHours();
+            const dayName = now.toLocaleDateString('de-DE', { weekday: 'long' });
+
+            const prompt = `Du bist ein Pricing-Analyst für FreshGO, einen Kaffee- und Getränke-Lieferservice in Lübeck.
+
+Es ist ${dayName}, ${hour}:00 Uhr. Bisherige Bestellungen: ${orderCount}.
+
+Aktuelle Produktpreise (NICHT Kaffee, der bleibt fix):
+${productList}
+
+Analysiere für jedes Produkt, ob der Preis angepasst werden sollte. Berücksichtige:
+- Tageszeit (Morgen/Mittag/Abend)
+- Wochentag (Wochenende vs. Werktag)
+- Saisonalität
+- Marktübliche Preise für Café-Lieferservices
+- Nachfrage-Elastizität
+
+WICHTIG: Antworte NUR mit validem JSON. Kurze Texte. Preisänderungen realistisch (max ±15%).
+
+Format:
+{"products": [{"name": "<exakter Produktname>", "new_price": <Zahl>, "direction": "up|down|same", "reason": "<1 kurzer Satz warum>"}]}`;
+
+            try {
+                const parsed = await callAI(prompt, 'Du bist ein Pricing-Analyst. Antworte NUR mit validem JSON. Kein Markdown. Kurze Begründungen.');
+                loadingEl.style.display = 'none';
+
+                if (parsed.products && parsed.products.length) {
+                    parsed.products.forEach(p => {
+                        // Match to existing product name (case-insensitive)
+                        const matchedName = Object.keys(currentProducts).find(
+                            n => n.toLowerCase() === p.name.toLowerCase()
+                        ) || p.name;
+
+                        if (matchedName.toLowerCase() !== FIXED_PRODUCT.toLowerCase()) {
+                            suggestedPrices[matchedName] = {
+                                newPrice: parseFloat(p.new_price) || currentProducts[matchedName]?.price || 0,
+                                reason: p.reason || '',
+                                direction: p.direction || 'same'
+                            };
+                        }
+                    });
+
+                    infoBanner.style.display = '';
+                    if (Object.keys(suggestedPrices).length > 0) {
+                        applyBtn.style.display = '';
+                    }
+                }
+
+                renderPricingProducts();
+
+            } catch (error) {
+                console.error('Pricing analysis error:', error);
+                loadingEl.style.display = 'none';
+                document.getElementById('pricing-products').innerHTML += `
+                    <div class="news-card" style="border-color: var(--red);">
+                        <h4 class="font-semibold mb-2" style="color: var(--red);">Fehler bei der Preisanalyse</h4>
+                        <p class="text-sm" style="color: var(--text-dim);">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Apply new prices to Firestore
+        document.getElementById('apply-prices-btn').addEventListener('click', applyNewPrices);
+
+        async function applyNewPrices() {
+            const applyBtn = document.getElementById('apply-prices-btn');
+            applyBtn.disabled = true;
+            applyBtn.textContent = '⏳ Wird gespeichert...';
+
+            try {
+                // Save pricing data to a dedicated Firestore collection
+                const pricingUpdates = {};
+                for (const [name, suggestion] of Object.entries(suggestedPrices)) {
+                    pricingUpdates[name] = {
+                        oldPrice: currentProducts[name]?.price || 0,
+                        newPrice: suggestion.newPrice,
+                        reason: suggestion.reason,
+                        direction: suggestion.direction
+                    };
+                    // Update the local state
+                    if (currentProducts[name]) {
+                        currentProducts[name].price = suggestion.newPrice;
+                    }
+                }
+
+                // Save to Firestore as the active pricing document
+                await setDoc(doc(db, 'artifacts', appId, 'executive_settings', 'dynamic_pricing'), {
+                    prices: pricingUpdates,
+                    updatedAt: new Date().toISOString(),
+                    appliedBy: 'executive-dashboard'
+                });
+
+                // Also save individual product prices so the main app can read them
+                for (const [name, suggestion] of Object.entries(suggestedPrices)) {
+                    try {
+                        await setDoc(doc(db, 'artifacts', appId, 'product_prices', name), {
+                            price: suggestion.newPrice,
+                            previousPrice: pricingUpdates[name].oldPrice,
+                            reason: suggestion.reason,
+                            updatedAt: new Date().toISOString()
+                        });
+                    } catch (e) {
+                        console.warn(`Could not save price for ${name}:`, e);
+                    }
+                }
+
+                // Clear suggestions and re-render
+                suggestedPrices = {};
+                applyBtn.style.display = 'none';
+                document.getElementById('pricing-info-banner').innerHTML = `
+                    <div style="background: var(--green-light); border: 1px solid rgba(45,106,79,0.2); border-radius: 12px; padding: 14px 20px;" class="flex items-center gap-3">
+                        <span style="font-size: 18px;">✅</span>
+                        <div class="text-sm" style="color: var(--green);">
+                            <strong>Preise erfolgreich übernommen!</strong> Die neuen Preise sind jetzt in der Datenbank und werden in der App angezeigt.
+                        </div>
+                    </div>
+                `;
+                renderPricingProducts();
+
+            } catch (error) {
+                console.error('Error applying prices:', error);
+                alert('Fehler beim Speichern: ' + error.message);
+            } finally {
+                applyBtn.disabled = false;
+                applyBtn.textContent = '✓ Neue Preise übernehmen';
+            }
+        }
+
+        // ============ INIT ============
+        loadAllData();
+    </script>
+</body>
+</html>
