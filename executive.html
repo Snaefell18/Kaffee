@@ -298,6 +298,31 @@
             .price-new, .price-tag { justify-content: flex-start; }
         }
 
+        .fc-input {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 14px;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text);
+            transition: border-color 0.2s;
+        }
+        .fc-input:focus { outline: none; border-color: var(--accent); }
+        .fc-input::-webkit-inner-spin-button { opacity: 0.5; }
+
+        .fc-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+        }
+        .fc-bar-label { font-size: 13px; width: 160px; flex-shrink: 0; }
+        .fc-bar-track { flex: 1; height: 22px; border-radius: 6px; background: var(--surface2); overflow: hidden; }
+        .fc-bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding: 0 10px; min-width: 30px; transition: width 0.4s ease; }
+        .fc-bar-value { font-size: 12px; font-weight: 600; white-space: nowrap; }
+
         @keyframes spinPulse {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -321,9 +346,10 @@
                 <div class="h-5 w-px mx-1" style="background: var(--border);"></div>
                 <nav class="flex gap-1.5">
                     <button class="tab-btn active" data-tab="controlling">Controlling</button>
+                    <button class="tab-btn" data-tab="forecast">Forecast</button>
+                    <button class="tab-btn" data-tab="pricing">Dynamic Pricing</button>
                     <button class="tab-btn" data-tab="umwelt">Umweltanalyse</button>
                     <button class="tab-btn" data-tab="routen">Routenoptimierung</button>
-                    <button class="tab-btn" data-tab="pricing">Dynamic Pricing</button>
                 </nav>
             </div>
             <div class="text-xs font-medium" style="color: var(--text-dim);">
@@ -519,6 +545,107 @@
         </div>
     </main>
 
+    <!-- FORECAST TAB -->
+    <main id="tab-forecast" class="max-w-7xl mx-auto px-6 py-8" style="display: none;">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <div>
+                <h2 class="text-2xl serif" style="font-style: italic;">Forecast</h2>
+                <p class="text-sm mt-1" style="color: var(--text-dim);">Umsatz- & Gewinnprognose basierend auf Szenarien</p>
+            </div>
+        </div>
+
+        <!-- Scenario Inputs -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
+            <div class="kpi-card" style="border-left: 3px solid var(--red);">
+                <div class="text-xs font-medium uppercase tracking-widest mb-3" style="color: var(--red);">Worst Case</div>
+                <label class="text-xs block mb-1.5" style="color: var(--text-dim);">Regelmäßige Kunden</label>
+                <input type="number" id="fc-worst-customers" value="150" min="0" class="fc-input">
+                <label class="text-xs block mb-1.5 mt-3" style="color: var(--text-dim);">Ø Bestellungen / Kunde / Monat</label>
+                <input type="number" id="fc-worst-orders" value="3" min="0" step="0.5" class="fc-input">
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid var(--accent);">
+                <div class="text-xs font-medium uppercase tracking-widest mb-3" style="color: var(--accent);">Realistic Case</div>
+                <label class="text-xs block mb-1.5" style="color: var(--text-dim);">Regelmäßige Kunden</label>
+                <input type="number" id="fc-real-customers" value="500" min="0" class="fc-input">
+                <label class="text-xs block mb-1.5 mt-3" style="color: var(--text-dim);">Ø Bestellungen / Kunde / Monat</label>
+                <input type="number" id="fc-real-orders" value="5" min="0" step="0.5" class="fc-input">
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid var(--green);">
+                <div class="text-xs font-medium uppercase tracking-widest mb-3" style="color: var(--green);">Best Case</div>
+                <label class="text-xs block mb-1.5" style="color: var(--text-dim);">Regelmäßige Kunden</label>
+                <input type="number" id="fc-best-customers" value="1200" min="0" class="fc-input">
+                <label class="text-xs block mb-1.5 mt-3" style="color: var(--text-dim);">Ø Bestellungen / Kunde / Monat</label>
+                <input type="number" id="fc-best-orders" value="6" min="0" step="0.5" class="fc-input">
+            </div>
+        </div>
+
+        <!-- Shared Assumptions -->
+        <div class="chart-container mb-6">
+            <h3 class="text-base font-semibold mb-4">Kalkulationsgrundlage</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
+                <div>
+                    <label class="text-xs block mb-1" style="color: var(--text-dim);">Ø Warenkorb (€)</label>
+                    <input type="number" id="fc-basket" value="8.50" min="0" step="0.50" class="fc-input">
+                </div>
+                <div>
+                    <label class="text-xs block mb-1" style="color: var(--text-dim);">Wareneinsatz (%)</label>
+                    <input type="number" id="fc-cogs" value="35" min="0" max="100" class="fc-input">
+                </div>
+                <div>
+                    <label class="text-xs block mb-1" style="color: var(--text-dim);">Liefergebühr / Bestellung (€)</label>
+                    <input type="number" id="fc-delivery-fee" value="1.90" min="0" step="0.10" class="fc-input">
+                </div>
+                <div>
+                    <label class="text-xs block mb-1" style="color: var(--text-dim);">Lieferkosten / Bestellung (€)</label>
+                    <input type="number" id="fc-delivery-cost" value="2.50" min="0" step="0.10" class="fc-input">
+                </div>
+                <div>
+                    <label class="text-xs block mb-1" style="color: var(--text-dim);">Server & Infrastruktur (€/Monat)</label>
+                    <input type="number" id="fc-server" value="120" min="0" class="fc-input">
+                </div>
+                <div>
+                    <label class="text-xs block mb-1" style="color: var(--text-dim);">Marketing (€/Monat)</label>
+                    <input type="number" id="fc-marketing" value="800" min="0" class="fc-input">
+                </div>
+                <div>
+                    <label class="text-xs block mb-1" style="color: var(--text-dim);">Personal (€/Monat)</label>
+                    <input type="number" id="fc-personnel" value="3500" min="0" class="fc-input">
+                </div>
+                <div>
+                    <label class="text-xs block mb-1" style="color: var(--text-dim);">Versicherung & Sonstiges (€/Monat)</label>
+                    <input type="number" id="fc-misc" value="350" min="0" class="fc-input">
+                </div>
+            </div>
+            <button class="btn-primary mt-5" id="fc-calculate-btn">📊 Prognose berechnen</button>
+        </div>
+
+        <!-- Results -->
+        <div id="fc-results" style="display: none;">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6" id="fc-summary-cards"></div>
+
+            <!-- Cost / Revenue Breakdown -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="chart-container">
+                    <h3 class="text-base font-semibold serif mb-4" style="font-style: italic;">Einnahmen (Realistic / Monat)</h3>
+                    <div id="fc-revenue-breakdown"></div>
+                </div>
+                <div class="chart-container">
+                    <h3 class="text-base font-semibold serif mb-4" style="font-style: italic;">Kosten (Realistic / Monat)</h3>
+                    <div id="fc-cost-breakdown"></div>
+                </div>
+            </div>
+
+            <!-- 12-Month Chart -->
+            <div class="chart-container">
+                <h3 class="text-base font-semibold serif mb-4" style="font-style: italic;">12-Monats-Prognose</h3>
+                <div style="position: relative; height: 360px;">
+                    <canvas id="fc-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
     <!-- SATISFACTION MODAL -->
     <div class="satisfaction-modal" id="satisfaction-modal">
         <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 32px; width: 90%; max-width: 420px; box-shadow: var(--shadow-md);">
@@ -576,7 +703,7 @@
         updateClock();
 
         // ============ TAB SWITCHING ============
-        const tabs = ['controlling', 'umwelt', 'routen', 'pricing'];
+        const tabs = ['controlling', 'umwelt', 'routen', 'pricing', 'forecast'];
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1848,6 +1975,209 @@ Format:
                 applyBtn.disabled = false;
                 applyBtn.textContent = '✓ Neue Preise übernehmen';
             }
+        }
+
+        // ============ FORECAST ============
+        let fcChart = null;
+
+        document.getElementById('fc-calculate-btn').addEventListener('click', calculateForecast);
+
+        function getVal(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+        function calculateForecast() {
+            const scenarios = {
+                worst: { customers: getVal('fc-worst-customers'), ordersPerMonth: getVal('fc-worst-orders'), label: 'Worst Case', color: 'var(--red)', colorHex: '#d64545', bgHex: 'rgba(214,69,69,0.1)' },
+                real: { customers: getVal('fc-real-customers'), ordersPerMonth: getVal('fc-real-orders'), label: 'Realistic Case', color: 'var(--accent)', colorHex: '#2d6a4f', bgHex: 'rgba(45,106,79,0.1)' },
+                best: { customers: getVal('fc-best-customers'), ordersPerMonth: getVal('fc-best-orders'), label: 'Best Case', color: 'var(--green)', colorHex: '#22c55e', bgHex: 'rgba(34,197,94,0.1)' }
+            };
+
+            const basket = getVal('fc-basket');
+            const cogsRate = getVal('fc-cogs') / 100;
+            const deliveryFee = getVal('fc-delivery-fee');
+            const deliveryCost = getVal('fc-delivery-cost');
+            const serverCost = getVal('fc-server');
+            const marketingCost = getVal('fc-marketing');
+            const personnelCost = getVal('fc-personnel');
+            const miscCost = getVal('fc-misc');
+            const fixedCosts = serverCost + marketingCost + personnelCost + miscCost;
+
+            // Calculate per scenario
+            for (const key of Object.keys(scenarios)) {
+                const s = scenarios[key];
+                s.totalOrders = s.customers * s.ordersPerMonth;
+                s.revenueProducts = s.totalOrders * basket;
+                s.revenueDelivery = s.totalOrders * deliveryFee;
+                s.revenueTotal = s.revenueProducts + s.revenueDelivery;
+                s.costCOGS = s.revenueProducts * cogsRate;
+                s.costDelivery = s.totalOrders * deliveryCost;
+                s.costServer = serverCost;
+                s.costMarketing = marketingCost;
+                s.costPersonnel = personnelCost;
+                s.costMisc = miscCost;
+                s.costTotal = s.costCOGS + s.costDelivery + fixedCosts;
+                s.profit = s.revenueTotal - s.costTotal;
+                s.margin = s.revenueTotal > 0 ? (s.profit / s.revenueTotal) * 100 : 0;
+                s.breakEvenOrders = (basket - basket * cogsRate + deliveryFee - deliveryCost) > 0
+                    ? Math.ceil(fixedCosts / (basket - basket * cogsRate + deliveryFee - deliveryCost))
+                    : Infinity;
+            }
+
+            document.getElementById('fc-results').style.display = '';
+
+            // Summary cards
+            const cardsEl = document.getElementById('fc-summary-cards');
+            const borderColors = { worst: 'var(--red)', real: 'var(--accent)', best: 'var(--green)' };
+            cardsEl.innerHTML = ['worst', 'real', 'best'].map(key => {
+                const s = scenarios[key];
+                const profitColor = s.profit >= 0 ? 'var(--green)' : 'var(--red)';
+                const profitIcon = s.profit >= 0 ? '▲' : '▼';
+                return `
+                    <div class="kpi-card" style="border-left: 3px solid ${borderColors[key]};">
+                        <div class="text-xs font-medium uppercase tracking-widest mb-4" style="color: ${borderColors[key]};">${s.label}</div>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                            <div>
+                                <div class="text-xs" style="color: var(--text-dim);">Bestellungen / Monat</div>
+                                <div class="text-lg font-semibold serif">${s.totalOrders.toLocaleString('de-DE')}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs" style="color: var(--text-dim);">Umsatz / Monat</div>
+                                <div class="text-lg font-semibold serif">${fmtEUR(s.revenueTotal)}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs" style="color: var(--text-dim);">Kosten / Monat</div>
+                                <div class="text-lg font-semibold serif">${fmtEUR(s.costTotal)}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs" style="color: var(--text-dim);">Gewinn / Monat</div>
+                                <div class="text-lg font-semibold serif" style="color: ${profitColor};">${profitIcon} ${fmtEUR(Math.abs(s.profit))}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs" style="color: var(--text-dim);">Marge</div>
+                                <div class="text-base font-semibold" style="color: ${profitColor};">${s.margin.toFixed(1)}%</div>
+                            </div>
+                            <div>
+                                <div class="text-xs" style="color: var(--text-dim);">Gewinn / Jahr</div>
+                                <div class="text-base font-semibold" style="color: ${profitColor};">${fmtEUR(Math.abs(s.profit * 12))}</div>
+                            </div>
+                        </div>
+                        ${s.breakEvenOrders < Infinity ? `<div class="text-xs mt-3 pt-3" style="border-top: 1px solid var(--border); color: var(--text-dim);">Break-Even bei ${s.breakEvenOrders.toLocaleString('de-DE')} Bestellungen/Monat</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            // Revenue breakdown (Realistic)
+            const r = scenarios.real;
+            const maxRev = Math.max(r.revenueProducts, r.revenueDelivery);
+            document.getElementById('fc-revenue-breakdown').innerHTML = renderBarChart([
+                { label: 'Produktumsatz', value: r.revenueProducts, color: 'rgba(45,106,79,0.25)', textColor: 'var(--accent)' },
+                { label: 'Liefergebühren', value: r.revenueDelivery, color: 'rgba(45,106,79,0.15)', textColor: 'var(--accent)' },
+            ], Math.max(r.revenueProducts, r.revenueDelivery))
+            + `<div class="fc-bar-row" style="border-top: 1px solid var(--border); margin-top: 4px; padding-top: 12px;">
+                <div class="fc-bar-label font-semibold">Gesamt</div>
+                <div class="text-sm font-semibold" style="color: var(--accent);">${fmtEUR(r.revenueTotal)}</div>
+            </div>`;
+
+            // Cost breakdown (Realistic)
+            const costItems = [
+                { label: 'Wareneinsatz', value: r.costCOGS, color: 'rgba(214,69,69,0.2)', textColor: 'var(--red)' },
+                { label: 'Lieferkosten', value: r.costDelivery, color: 'rgba(214,69,69,0.15)', textColor: 'var(--red)' },
+                { label: 'Personal', value: r.costPersonnel, color: 'rgba(199,127,10,0.15)', textColor: 'var(--yellow)' },
+                { label: 'Marketing', value: r.costMarketing, color: 'rgba(199,127,10,0.12)', textColor: 'var(--yellow)' },
+                { label: 'Server & Infra', value: r.costServer, color: 'rgba(138,134,128,0.12)', textColor: 'var(--text-dim)' },
+                { label: 'Versicherung & Sonstiges', value: r.costMisc, color: 'rgba(138,134,128,0.1)', textColor: 'var(--text-dim)' },
+            ];
+            const maxCost = Math.max(...costItems.map(c => c.value));
+            document.getElementById('fc-cost-breakdown').innerHTML = renderBarChart(costItems, maxCost)
+            + `<div class="fc-bar-row" style="border-top: 1px solid var(--border); margin-top: 4px; padding-top: 12px;">
+                <div class="fc-bar-label font-semibold">Gesamt</div>
+                <div class="text-sm font-semibold" style="color: var(--red);">${fmtEUR(r.costTotal)}</div>
+            </div>`;
+
+            // 12-Month Chart
+            build12MonthChart(scenarios);
+        }
+
+        function fmtEUR(v) {
+            return v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' €';
+        }
+
+        function renderBarChart(items, maxVal) {
+            return items.map(item => {
+                const pct = maxVal > 0 ? Math.max(2, (item.value / maxVal) * 100) : 2;
+                return `
+                    <div class="fc-bar-row">
+                        <div class="fc-bar-label" style="color: var(--text-dim);">${item.label}</div>
+                        <div class="fc-bar-track">
+                            <div class="fc-bar-fill" style="width: ${pct}%; background: ${item.color};">
+                                <span class="fc-bar-value" style="color: ${item.textColor};">${fmtEUR(item.value)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function build12MonthChart(scenarios) {
+            const ctx = document.getElementById('fc-chart').getContext('2d');
+            if (fcChart) fcChart.destroy();
+
+            const months = ['M1','M2','M3','M4','M5','M6','M7','M8','M9','M10','M11','M12'];
+
+            // Growth ramp: start at 30% in month 1, scale up to 100% by month 8
+            function ramp(i) { return Math.min(1, 0.3 + (i / 8) * 0.7); }
+
+            const datasets = [
+                { key: 'worst', label: 'Worst Case – Gewinn', color: '#d64545', dash: [6, 4] },
+                { key: 'real', label: 'Realistic – Gewinn', color: '#2d6a4f', dash: [] },
+                { key: 'best', label: 'Best Case – Gewinn', color: '#22c55e', dash: [6, 4] },
+            ].map(d => ({
+                label: d.label,
+                data: months.map((_, i) => scenarios[d.key].profit * ramp(i)),
+                borderColor: d.color,
+                backgroundColor: d.key === 'real' ? 'rgba(45,106,79,0.08)' : 'transparent',
+                borderWidth: d.key === 'real' ? 2.5 : 1.5,
+                borderDash: d.dash,
+                fill: d.key === 'real',
+                tension: 0.3,
+                pointRadius: d.key === 'real' ? 4 : 2,
+                pointBackgroundColor: d.color,
+            }));
+
+            // Add zero line reference
+            datasets.push({
+                label: 'Break-Even',
+                data: months.map(() => 0),
+                borderColor: '#ccc',
+                borderWidth: 1,
+                borderDash: [4, 4],
+                fill: false,
+                pointRadius: 0,
+            });
+
+            fcChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: months, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { labels: { color: '#8a8680', font: { family: 'Outfit', size: 11 } } },
+                        tooltip: {
+                            backgroundColor: '#fff', titleColor: '#1a1a1a', bodyColor: '#1a1a1a',
+                            borderColor: '#e4e2dc', borderWidth: 1, cornerRadius: 10, padding: 12,
+                            callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.y !== null ? fmtEUR(c.parsed.y) : '–'}` }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#aaa', font: { family: 'Outfit', size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } },
+                        y: {
+                            ticks: { color: '#aaa', font: { family: 'Outfit', size: 11 }, callback: v => fmtEUR(v) },
+                            grid: { color: 'rgba(0,0,0,0.04)' }
+                        }
+                    }
+                }
+            });
         }
 
         // ============ INIT ============
