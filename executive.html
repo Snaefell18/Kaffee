@@ -298,6 +298,41 @@
             .price-new, .price-tag { justify-content: flex-start; }
         }
 
+        .kthead {
+            padding: 14px 18px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            text-align: right;
+            white-space: nowrap;
+            background: var(--surface2);
+        }
+        .kthead:first-child { text-align: center; width: 44px; }
+        .kthead:nth-child(2) { text-align: left; }
+        .ktcell {
+            padding: 13px 18px;
+            font-size: 13.5px;
+            text-align: right;
+            white-space: nowrap;
+            border-bottom: 1px solid var(--border);
+        }
+        .ktcell:first-child { text-align: center; color: var(--text-dim); font-size: 12px; }
+        .ktcell:nth-child(2) { text-align: left; font-weight: 500; }
+        .kunden-row { transition: background 0.15s; }
+        .kunden-row:hover { background: var(--surface2); }
+
+        .abc-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px; height: 24px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
         .fc-input {
             width: 100%;
             background: var(--surface2);
@@ -349,6 +384,7 @@
                     <button class="tab-btn" data-tab="forecast">Forecast</button>
                     <button class="tab-btn" data-tab="pricing">Dynamic Pricing</button>
                     <button class="tab-btn" data-tab="umwelt">Umweltanalyse</button>
+                    <button class="tab-btn" data-tab="kunden">Kunden</button>
                     <button class="tab-btn" data-tab="routen">Routenoptimierung</button>
                 </nav>
             </div>
@@ -415,6 +451,53 @@
             <div style="position: relative; width: 100%; max-width: 640px; margin: 0 auto;">
                 <canvas id="bcg-canvas" width="640" height="520" style="width: 100%; height: auto; cursor: crosshair;"></canvas>
                 <div id="bcg-tooltip" style="position: absolute; display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; box-shadow: var(--shadow-md); pointer-events: none; z-index: 10; max-width: 260px;"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- KUNDEN TAB -->
+    <main id="tab-kunden" class="max-w-7xl mx-auto px-6 py-8" style="display: none;">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <div>
+                <h2 class="text-2xl serif" style="font-style: italic;">Kunden</h2>
+                <p class="text-sm mt-1" style="color: var(--text-dim);">Kundenübersicht mit CLV und ABC-Kategorisierung</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <select class="select-styled" id="kunden-sort">
+                    <option value="revenue">Sortieren: Umsatz</option>
+                    <option value="orders">Sortieren: Bestellungen</option>
+                    <option value="clv">Sortieren: CLV</option>
+                    <option value="abc">Sortieren: ABC</option>
+                </select>
+                <select class="select-styled" id="kunden-filter">
+                    <option value="all">Alle Kunden</option>
+                    <option value="A">Nur A-Kunden</option>
+                    <option value="B">Nur B-Kunden</option>
+                    <option value="C">Nur C-Kunden</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- KPI summary -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6" id="kunden-kpis"></div>
+
+        <!-- Table -->
+        <div class="chart-container" style="padding: 0; overflow: hidden;">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;" id="kunden-table">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <th class="kthead">#</th>
+                            <th class="kthead" style="text-align: left;">Kunden-ID</th>
+                            <th class="kthead">Bestellungen</th>
+                            <th class="kthead">Umsatz</th>
+                            <th class="kthead">Ø Warenkorb</th>
+                            <th class="kthead">CLV (12M)</th>
+                            <th class="kthead">Kategorie</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kunden-tbody"></tbody>
+                </table>
             </div>
         </div>
     </main>
@@ -703,7 +786,7 @@
         updateClock();
 
         // ============ TAB SWITCHING ============
-        const tabs = ['controlling', 'umwelt', 'routen', 'pricing', 'forecast'];
+        const tabs = ['controlling', 'forecast', 'pricing', 'umwelt', 'kunden', 'routen'];
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -877,6 +960,7 @@
                 buildTopProducts();
                 buildBCGMatrix();
                 buildProductCatalog();
+                buildKundenData();
 
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -1171,11 +1255,11 @@
             function toX(share) { return pad.left + (share / maxShare) * plotW; }
             function toY(growth) { return pad.top + plotH / 2 - (growth / absMaxGrowth) * (plotH / 2); }
 
-            // Force Kaffee into Star quadrant visually if needed
+            // Force Kaffee into center of Star quadrant
             bcgProducts.forEach(p => {
                 if (p.isKaffee) {
-                    if (p.share < 15) p.share = 18 + Math.random() * 5;
-                    if (p.growth < 0) p.growth = 10 + Math.random() * 15;
+                    p.share = maxShare * 0.75;
+                    p.growth = absMaxGrowth * 0.5;
                 }
             });
 
@@ -1976,6 +2060,136 @@ Format:
                 applyBtn.textContent = '✓ Neue Preise übernehmen';
             }
         }
+
+        // ============ KUNDEN ============
+        let kundenData = [];
+
+        function buildKundenData() {
+            const customerMap = {};
+            allOrders.forEach(order => {
+                const uid = order.userId || order.id || 'anonymous';
+                if (!customerMap[uid]) customerMap[uid] = { id: uid, orders: 0, revenue: 0, firstOrder: null, lastOrder: null };
+                const c = customerMap[uid];
+                c.orders++;
+                c.revenue += (order.totalPrice || 0);
+                const date = order.createdAt ? new Date(order.createdAt) : null;
+                if (date) {
+                    if (!c.firstOrder || date < c.firstOrder) c.firstOrder = date;
+                    if (!c.lastOrder || date > c.lastOrder) c.lastOrder = date;
+                }
+            });
+
+            // Calculate CLV and ABC
+            const customers = Object.values(customerMap);
+            const totalRevenue = customers.reduce((s, c) => s + c.revenue, 0) || 1;
+
+            customers.forEach(c => {
+                c.avgBasket = c.orders > 0 ? c.revenue / c.orders : 0;
+                // CLV (12 months): project monthly order rate × avg basket × 12
+                const spanMonths = (c.firstOrder && c.lastOrder)
+                    ? Math.max(1, (c.lastOrder - c.firstOrder) / (1000 * 60 * 60 * 24 * 30))
+                    : 1;
+                const monthlyRate = c.orders / spanMonths;
+                c.clv = monthlyRate * c.avgBasket * 12;
+                c.shortId = c.id.length > 12 ? c.id.slice(0, 5) + '…' + c.id.slice(-4) : c.id;
+            });
+
+            // ABC by revenue
+            customers.sort((a, b) => b.revenue - a.revenue);
+            const totalCustomers = customers.length;
+            if (totalCustomers <= 3) {
+                // Small dataset: assign by rank
+                customers.forEach((c, i) => {
+                    if (totalCustomers === 1) c.abc = 'A';
+                    else if (totalCustomers === 2) c.abc = i === 0 ? 'A' : 'B';
+                    else c.abc = i === 0 ? 'A' : i === 1 ? 'B' : 'C';
+                });
+            } else {
+                // Standard: top 20% = A, next 30% = B, rest = C
+                customers.forEach((c, i) => {
+                    const rankPct = (i + 1) / totalCustomers;
+                    if (rankPct <= 0.2) c.abc = 'A';
+                    else if (rankPct <= 0.5) c.abc = 'B';
+                    else c.abc = 'C';
+                });
+            }
+
+            kundenData = customers;
+            renderKundenKPIs();
+            renderKundenTable();
+        }
+
+        function renderKundenKPIs() {
+            const total = kundenData.length;
+            const aCount = kundenData.filter(c => c.abc === 'A').length;
+            const bCount = kundenData.filter(c => c.abc === 'B').length;
+            const cCount = kundenData.filter(c => c.abc === 'C').length;
+            const avgCLV = total > 0 ? kundenData.reduce((s, c) => s + c.clv, 0) / total : 0;
+
+            document.getElementById('kunden-kpis').innerHTML = `
+                <div class="kpi-card" style="padding: 18px 20px;">
+                    <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color: var(--text-dim);">Gesamt</div>
+                    <div class="text-2xl font-semibold serif">${total}</div>
+                </div>
+                <div class="kpi-card" style="padding: 18px 20px;">
+                    <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color: var(--green);">A-Kunden</div>
+                    <div class="text-2xl font-semibold serif">${aCount} <span class="text-sm font-normal" style="color: var(--text-dim);">(${total > 0 ? ((aCount/total)*100).toFixed(0) : 0}%)</span></div>
+                </div>
+                <div class="kpi-card" style="padding: 18px 20px;">
+                    <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color: var(--yellow);">B-Kunden</div>
+                    <div class="text-2xl font-semibold serif">${bCount} <span class="text-sm font-normal" style="color: var(--text-dim);">(${total > 0 ? ((bCount/total)*100).toFixed(0) : 0}%)</span></div>
+                </div>
+                <div class="kpi-card" style="padding: 18px 20px;">
+                    <div class="text-xs font-medium uppercase tracking-widest mb-2" style="color: var(--text-dim);">Ø CLV (12M)</div>
+                    <div class="text-2xl font-semibold serif">${formatCurrency(avgCLV)}</div>
+                </div>
+            `;
+        }
+
+        function renderKundenTable() {
+            const sortBy = document.getElementById('kunden-sort').value;
+            const filterBy = document.getElementById('kunden-filter').value;
+
+            let filtered = filterBy === 'all' ? [...kundenData] : kundenData.filter(c => c.abc === filterBy);
+
+            const sorters = {
+                revenue: (a, b) => b.revenue - a.revenue,
+                orders: (a, b) => b.orders - a.orders,
+                clv: (a, b) => b.clv - a.clv,
+                abc: (a, b) => { const ord = { A: 0, B: 1, C: 2 }; return (ord[a.abc] ?? 3) - (ord[b.abc] ?? 3) || b.revenue - a.revenue; }
+            };
+            filtered.sort(sorters[sortBy] || sorters.revenue);
+
+            const abcStyles = {
+                A: { bg: 'var(--green-light)', color: 'var(--green)' },
+                B: { bg: 'var(--yellow-light)', color: 'var(--yellow)' },
+                C: { bg: 'var(--surface2)', color: 'var(--text-dim)' }
+            };
+
+            const tbody = document.getElementById('kunden-tbody');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="ktcell" style="text-align: center; color: var(--text-dim); padding: 32px;">Keine Kundendaten vorhanden.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((c, i) => {
+                const s = abcStyles[c.abc] || abcStyles.C;
+                return `
+                    <tr class="kunden-row">
+                        <td class="ktcell">${i + 1}</td>
+                        <td class="ktcell" title="${c.id}">${c.shortId}</td>
+                        <td class="ktcell">${c.orders}</td>
+                        <td class="ktcell">${formatCurrency(c.revenue)}</td>
+                        <td class="ktcell">${formatCurrency(c.avgBasket)}</td>
+                        <td class="ktcell" style="font-weight: 600;">${formatCurrency(c.clv)}</td>
+                        <td class="ktcell"><span class="abc-pill" style="background: ${s.bg}; color: ${s.color};">${c.abc}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('kunden-sort').addEventListener('change', renderKundenTable);
+        document.getElementById('kunden-filter').addEventListener('change', renderKundenTable);
 
         // ============ FORECAST ============
         let fcChart = null;
